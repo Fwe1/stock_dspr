@@ -1,383 +1,209 @@
-# stock_dspr
-<div id="top"></div>
+# Stockdspr
 
-<div align='center'>
+### 의료기관 의약품 재고 분석 및 분배 시뮬레이션 시스템
 
-<h1><b>비상상황시 재고 관리 시스템</b></h1>
-<h3><b>프로젝트 부제목</b></h3>
+감염병 유행이나 재난으로 의약품 수요가 집중되는 상황을 가정하여, 기관별 재고와 부족 현황을 파악하고 재고 분배를 실험하는 프로젝트입니다.
 
-🔗 [배포 링크](https://)
+> 현재 개발 초기 단계입니다. 프로젝트 설정과 엔티티를 작성하고 있으며, 아래의 주요 기능과 Kafka·Redis·React 연동은 구현 목표입니다. 실제 운영 중인 서비스나 성능 검증이 완료된 시스템을 의미하지 않습니다.
 
-<img src="" alt="intro title image"/>
+## 목차
 
-</div>
+1. [프로젝트 소개](#1-프로젝트-소개)
+2. [개발 현황](#2-개발-현황)
+3. [기술 스택 및 사용 목적](#3-기술-스택-및-사용-목적)
+4. [주요 기능](#4-주요-기능)
+5. [ERD 및 프로젝트 구조](#5-erd-및-프로젝트-구조)
+6. [시작 가이드](#6-시작-가이드)
+7. [테스트 및 개선 기록](#7-테스트-및-개선-기록)
 
-<br>
+## 1. 프로젝트 소개
 
-## 0. 목차
+### 개발 배경
 
-1. [프로젝트 소개](#1)
-2. [팀원 소개](#2)
-3. [개발 일정](#3)
-4. [기술 스택](#4)
-5. [라이브러리 사용 이유](#5)
-6. [컨벤션](#6)
-7. [브랜치 및 디렉토리 구조](#7)
-8. [주요 기능 소개](#8)
-9. [상세 담당 업무](#9)
-10. [주요 코드 ](#10)
-11. [트러블 슈팅](#11)
-12. [프로젝트 회고](#12)
-13. [시작 가이드](#13)
+특정 의약품의 수요가 짧은 시간에 증가하는 상황에서는 전체 재고량뿐 아니라 기관별 재고 차이, 최소 비축량, 유효기간을 함께 확인할 필요가 있습니다.
 
-<br />
+이 프로젝트는 가상의 기관·재고·소비 데이터를 사용하여 다음 문제를 다루는 것을 목표로 합니다.
 
-## <span id="1">🚩 1. 프로젝트 소개</span>
+- 기관별 의약품 재고와 부족 현황을 한곳에서 조회하기
+- 재고 변경 내역을 기록하고 분석에 반영하기
+- 조회 요청이 증가할 때 응답 성능과 데이터 갱신 지연을 측정하기
+- 비상 상황에서 재고 분배 기준과 결과를 시뮬레이션하기
 
-Notion: [프로젝트 노션 링크](https://)
+### 프로젝트 범위
 
-프로젝트에 대한 전반적인 소개를 여기에 적어주세요.
+실제 의료기관의 재고 시스템에 연결된 서비스가 아닌 학습·실험용 시스템을 목표로 합니다. 실제 의약품 거래, 환자 정보 처리, 배차·배송 운영은 다루지 않습니다. 분배 시뮬레이션의 세부 규칙은 재고 관리 기능을 구현하면서 구체화합니다.
 
-<br>
+## 2. 개발 현황
 
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
+아래 상태는 2026-09-22 기준 로컬 백엔드 설정과 작성 중인 소스에 맞춘 기록입니다. 의존성 설정은 기능 구현이나 정상 실행 확인과 구분합니다.
 
-<br>
+| 항목 | 상태 |
+| --- | --- |
+| Spring Boot 프로젝트 및 Gradle 설정 | 설정 파일 작성 |
+| Spring Data JPA·PostgreSQL 드라이버·Lombok | 의존성 설정 |
+| ERD 및 엔티티 | 설계·작성 중 |
+| PostgreSQL 연결 및 기본 API | 구현·검증 예정 |
+| Kafka·Redis 연동 | 도입 예정 |
+| React 화면 | 도입 예정 |
+| 기능 테스트·부하 테스트·배포 | 진행 예정 |
 
-## <span id="2">🏃 2. 팀원 소개</span>
+빌드 성공, 서버 실행, DB 연결, 기능 동작 및 성능 수치는 아직 이 문서에서 검증된 결과로 제시하지 않습니다.
 
-<div align="center">
+## 3. 기술 스택 및 사용 목적
 
-| <img src="https://img.shields.io/badge/Project_Leader-FF5733" /> | <img src="https://img.shields.io/badge/Tech_Leader-%2300264B" /> | <img src="https://img.shields.io/badge/Documentation_Leader-%2310069F%20" /> | <img src="https://img.shields.io/badge/Design_Leader-blue" /> |
-| :--------------------------------------------------------------: | :--------------------------------------------------------------: | :--------------------------------------------------------------------------: | :-----------------------------------------------------------: |
-|      <img src="https://github.com/" width="120px;" alt=""/>      |      <img src="https://github.com/" width="120px;" alt=""/>      |            <img src="https://github.com/" width="120px;" alt=""/>            |    <img src="https://github.com/" width="120px;" alt=""/>     |
-|           [팀원1 이름](https://github.com/팀원1아이디)           |           [팀원2 이름](https://github.com/팀원2아이디)           |                 [팀원3 이름](https://github.com/팀원3아이디)                 |         [팀원4 이름](https://github.com/팀원4아이디)          |
-|                            기능1 설명                            |                            기능2 설명                            |                                  기능3 설명                                  |                          기능4 설명                           |
+### 백엔드 및 데이터
 
-</div>
+| 기술 | 버전·상태 | 사용 목적 |
+| --- | --- | --- |
+| Java | 21 / 빌드 설정 반영 | 서버 로직 구현 |
+| Spring Boot | 4.1.1 / 빌드 설정 반영 | REST API와 애플리케이션 구성 |
+| Spring Data JPA | 의존성 설정 | 엔티티와 관계형 데이터의 매핑, 데이터 접근 처리 |
+| [PostgreSQL](https://www.postgresql.org/about/) | JDBC 드라이버 설정 / 서버 버전 미정 | 기관·의약품·재고 및 변경 이력의 기준 데이터 저장 |
+| [Apache Kafka](https://kafka.apache.org/intro/) | 도입 예정 / 버전 미정 | 재고 변경 이벤트 전달, 분석 등 후속 처리의 비동기 분리 |
+| [Redis](https://redis.io/docs/latest/develop/get-started/) | 도입 예정 / 버전 미정 | 반복 조회되는 재고·집계 결과의 캐시 |
+| Lombok | 의존성 설정 | getter 등 반복적인 Java 코드 작성 보조 |
 
-<br>
+### 프론트엔드
 
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
+| 기술 | 상태 | 사용 목적 |
+| --- | --- | --- |
+| [React](https://react.dev/) | 도입 예정 / 버전 미정 | 기관별 재고 조회, 부족 현황 및 분석 결과 화면 구성 |
 
-<br>
+프론트엔드의 세부 라이브러리, JavaScript·TypeScript 선택 및 패키지 관리자는 프로젝트 구성 시 결정합니다.
 
-## <span id="3">📅 3. 개발 일정</span>
+### 빌드·패키지 관리 및 개발 도구
 
-> 프로젝트 개발 기간: 202n.00.00 - 202n.00.00 (n일)
+| 구분 | 도구 | 상태·용도 |
+| --- | --- | --- |
+| 백엔드 빌드·의존성 관리 | [Gradle](https://docs.gradle.org/current/userguide/gradle_basics.html) | 9.7.1 / Gradle Wrapper 사용 |
+| 프론트엔드 패키지 관리 | 미정 | React 프로젝트 구성 후 기록 |
+| 개발 환경 | IntelliJ IDEA | 백엔드 개발 |
+| 버전 관리 | Git·GitHub | 소스 코드와 변경 이력 관리 |
 
-<br>
+### 데이터 처리 설계 방향
 
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
+다음은 구현 목표이며, 현재 완성된 처리 흐름은 아닙니다.
 
-<br>
+- **PostgreSQL:** 재고 수량 판단의 기준 데이터를 보관합니다.
+- **Redis:** 조회 성능 개선에 사용합니다. 캐시가 DB보다 늦게 갱신될 수 있으므로 갱신·무효화 정책도 함께 설계합니다.
+- **Kafka:** 재고 변경 이후 분석·집계 등의 후속 처리를 분리하는 데 사용합니다. DB 저장과 이벤트 발행 사이의 실패, 중복 이벤트 처리, 처리 지연은 별도로 검증합니다.
+- **React:** Spring Boot API를 통해 데이터를 조회합니다. 화면 갱신 방식은 추후 결정하며, Kafka 도입만으로 화면이 자동 갱신되는 것은 아닙니다.
 
-## <span id="4">📚 4. 기술 스택</span>
+## 4. 주요 기능
 
-### Environment
+아래 기능은 구현 예정 항목입니다. 동작 확인과 테스트를 마친 기능부터 상태와 검증 근거를 갱신합니다.
 
-![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)![Git](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white)![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)
+| 기능 | 내용 | 상태 |
+| --- | --- | --- |
+| 기관 관리 | 의료기관의 기본 정보 등록·조회·수정 | 예정 |
+| 의약품 관리 | 의약품 기본 정보 등록·조회 | 예정 |
+| 기관별 재고 관리 | 기관·의약품별 재고 수량 등록 및 변경 | 예정 |
+| 유효기간 관리 | 유효기간을 기준으로 재고를 구분하고 조회 | 예정 |
+| 최소 비축량 관리 | 기관별 기준 수량 설정 및 부족 여부 판단 | 예정 |
+| 재고 변경 이력 | 수량 변경 시점과 변경 내용을 기록 | 예정 |
+| 재고 분석 | 기관별·의약품별 재고와 부족 현황 집계 | 예정 |
+| 분배 시뮬레이션 | 가상의 부족 상황과 분배 기준에 따른 결과 비교 | 세부 설계 예정 |
+| 재고 현황 화면 | React를 이용한 재고·부족 현황 표시 | 예정 |
 
-### Config
+API 명세, 화면 이미지 및 요청·응답 예시는 실제 구현이 진행된 이후 추가합니다.
 
-![Yarn](https://img.shields.io/badge/yarn-%232C8EBB.svg?style=for-the-badge&logo=yarn&logoColor=white)
+## 5. ERD 및 프로젝트 구조
 
-### Development
+### ERD
 
-![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)![React Query](https://img.shields.io/badge/-React%20Query-FF4154?style=for-the-badge&logo=react%20query&logoColor=white)![React Router](https://img.shields.io/badge/React_Router-CA4245?style=for-the-badge&logo=react-router&logoColor=white)![Redux](https://img.shields.io/badge/redux-%23593d88.svg?style=for-the-badge&logo=redux&logoColor=white)![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)![Styled Components](https://img.shields.io/badge/styled--components-DB7093?style=for-the-badge&logo=styled-components&logoColor=white)![Webpack](https://img.shields.io/badge/webpack-%238DD6F9.svg?style=for-the-badge&logo=webpack&logoColor=black)
+기관(`Facility`), 재고(`Stock`), 기관별 재고(`FacilityInventory`) 관련 엔티티를 작성 중입니다. 테이블 관계와 제약조건을 정리한 뒤 최신 ERD 이미지를 첨부할 예정입니다.
 
-### Project Management
+### 현재 백엔드 구조
 
-![Github Issues]() ![Github Pull requests]()
+아래는 현재 작성 중인 백엔드의 주요 파일입니다. React 디렉터리와 아직 생성하지 않은 서버 계층은 포함하지 않았습니다.
 
-### Design
-
-![Pigma]()
-
-### Hosting
-
-![Vercel](https://img.shields.io/badge/vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white)
-
-### Communication
-
-![Notion](https://img.shields.io/badge/Notion-%23000000.svg?style=for-the-badge&logo=notion&logoColor=white)![Discord](https://img.shields.io/badge/Discord-2D8CFF?style=for-the-badge&logo=Discord&logoColor=white)
-
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="5">❓ 5. 라이브러리 사용 이유</span>
-
-각 라이브러리의 사용 이유를 설명해주세요.
-
-> React
-
-<br>
-
-> Redux
-
-<br>
-
-> Axios
-
-<br>
-
-> Styled-Components
-
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="6">🤝 6. 컨벤션</span>
-
-### prettier
-
-```json
-{
-  "printWidth": 80,
-  "tabWidth": 2,
-  "singleQuote": true,
-  "trailingComma": "all",
-  "semi": false
-}
+```text
+stockdspr/
+├── build.gradle
+├── settings.gradle
+├── gradlew
+├── gradlew.bat
+├── gradle/
+│   └── wrapper/
+└── src/
+    ├── main/
+    │   ├── java/com/tea1/stockdspr/
+    │   │   ├── StockdsprApplication.java
+    │   │   └── domain/
+    │   │       ├── Facility.java
+    │   │       ├── FacilityInventory.java
+    │   │       └── Stock.java
+    │   └── resources/
+    │       └── application.properties
+    └── test/
+        └── java/com/tea1/stockdspr/
+            └── StockdsprApplicationTests.java
 ```
 
-### 커밋 컨벤션
+## 6. 시작 가이드
 
-| **타입** | **설명**                                          | **예시**                                              |
-| -------- | ------------------------------------------------- | ----------------------------------------------------- |
-| feat     | 기능 구현                                         | [feat] - 페인페이지 레이아웃 구현                     |
-| rename   | 파일/폴더 이름 변경 및 이동                       | [rename] - `src/old-folder`를 `src/new-folder`로 이동 |
-| script   | 라이브러리 추가                                   | [script] - `supabase` 라이브러리 추가                 |
-| fix      | 버그 수정                                         | [fix] - `supabase` env 미연결 문제 해결               |
-| chore    | 빌드 업무 수정, 패키지 매니저 설정 수정           | [chore] - .env 설정 변경                              |
-| refactor | 코드 리팩토링                                     | [refactor] - 함수 분리 및 코드 정리                   |
-| style    | 코드 포맷팅, 세미콜론 누락, 코드 변경이 없는 경우 | [style] - 버튼 스타일 수정                            |
-| test     | 테스트 코드, 리팩토링 테스트 코드 추가            | [test] - 유저 로그인 기능 테스트 추가                 |
-| docs     | 문서 수정                                         | [docs] - API 문서 업데이트                            |
+> DB 연결 설정과 서버 실행 절차를 정리 중입니다. 아래 명령은 설정을 마친 뒤 사용할 기본 명령이며, 현재 코드의 빌드·실행 성공을 보장하는 검증 기록은 아닙니다.
 
-<br>
+### 준비 사항
 
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
+- JDK 21
+- PostgreSQL 서버와 개발용 데이터베이스
+- 프로젝트에 포함된 Gradle Wrapper
 
-<br>
+Kafka·Redis와 프론트엔드 실행 환경은 해당 기능을 도입한 뒤 버전 및 실행 절차를 추가합니다.
 
-## 7.<span id="7"> 🗂️ 브랜치 및 디렉토리 구조</span>
+### DB 연결 설정
 
-> 브랜치
+현재 DB 연결 설정은 추가가 필요합니다. 실행 전에 다음 항목을 자신의 개발 환경에 맞게 설정합니다.
 
-- `main`:
-- `dev`:
--
+| Spring Boot 설정 항목 | 의미 |
+| --- | --- |
+| `spring.datasource.url` | PostgreSQL 접속 주소와 데이터베이스 이름 |
+| `spring.datasource.username` | 데이터베이스 계정 |
+| `spring.datasource.password` | 데이터베이스 비밀번호 |
 
-<br>
+실제 비밀번호와 API 키는 README나 공개 설정 파일에 커밋하지 않습니다. DB 스키마 생성 방법은 엔티티 설계와 함께 정리할 예정입니다.
 
-> 디렉토리 구조
+### 백엔드 실행 명령
 
-```
-📂 App
-├── 📂 src
-│   ├── 📂 components      # 컴포넌트 관련 파일
-│   ├── 📂 pages           # 페이지 파일
-│   ├── 📂 redux           # Redux 상태 관리 파일
-│   ├── 📂 utils           # 유틸리티 파일
-│   └── 📄 App.js          # 메인 App 컴포넌트
-├── 📂 public
-│   ├── 📄 index.html      # HTML 엔트리 파일
-│   └── 📄 favicon.ico     # 사이트 아이콘
-└── 📄 package.json        # 프로젝트 종속성 및 설정 파일
+DB 연결과 스키마 준비, 소스 코드 정리를 마친 뒤 `build.gradle`이 있는 디렉터리에서 실행합니다. Spring Boot의 기본 실행 작업은 [`bootRun`](https://docs.spring.io/spring-boot/gradle-plugin/running.html)입니다.
 
+Windows PowerShell:
+
+```powershell
+.\gradlew.bat bootRun
 ```
 
-<br>
+macOS / Linux:
 
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="8">8. 💻 주요 기능 소개</span>
-
-프로젝트의 주요 기능을 GIF를 첨부하여 설명해주세요.
-
-### 1) 홈
-
-| - 화면                                            | - 화면                                            | - 화면                                            |
-| ------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| <img src="" alt="-화면" width="288" height="608"> | <img src="" alt="-화면" width="288" height="608"> | <img src="" alt="-화면" width="288" height="608"> |
-
-### 2) 게시글
-
-| 상세페이지 화면                                   | 게시물 작성 - ??                                  | 게시물 작성 - ??                                  |
-| ------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| <img src="" alt="-화면" width="288" height="608"> | <img src="" alt="-화면" width="288" height="608"> | <img src="" alt="-화면" width="288" height="608"> |
-
-### 3) 404 & 로딩 화면
-
-| - 화면                                            | - 화면                                            | - 화면                                            |
-| ------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| <img src="" alt="-화면" width="288" height="608"> | <img src="" alt="-화면" width="288" height="608"> | <img src="" alt="-화면" width="288" height="608"> |
-
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="9">9. 📄 상세 담당 업무</span>
-
-### 1) 팀원1 이름
-
-- **🎨 디자인**
-
-  - 로고 디자인 및 이미지 제작
-
-- **💻 화면 개발**
-
-  - 로그인 화면
-  - 검색 화면
-  - 채팅 화면
-
-- **🧑‍💻 구현 기능**
-
-  - 로딩 페이지
-    - 회원가입 후 로그인 모달이 올라오는 로딩페이지
-  - 팔로워 목록 및 팔로워 취소&팔로우
-    - 팔로워 목록을 getFollowerList로 서버에 요청하여 리스트 출력
-
-- **♻️ 리팩토링**
-  - 관련 설명
-
-### 2) 팀원2 이름
-
-- **🎨 디자인**
-
-  - 전체적인 UI 디자인
-
-- **💻 화면 개발**
-
-  - 공통 헤더 네브바
-  - 공통 푸터 네브바
-  - 삭제 / 신고 모달창
-
-- **👩‍💻 구현 기능**
-
-  - 라우터 초기 셋팅
-  - 게시물 등록
-    - 토글 Open, Close에 따라 인풋창 높이 자동 조절
-    - api 전송 한계로 인해 한 공간에 저장하여 보낼 수 있게, 데이터를 연산자로 구분하여 한줄로 전송
-      이미지 추가 및 삭제 가능
-  - 게시글 삭제 / 신고
-    - userId를 통해 유저를 구별하여 타인의 경우 신고 기능, 본인일 경우 삭제 기능 구현
-
-- **♻️ 리팩토링**
-  - 관련 설명
-
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="10">✨ 10. 주요 코드</span>
-
-<details>
-<summary> 주요 코드에 대한 설명을 입력하세요. </summary>
-
-<div>
-설명
-
-```jsx
-
+```bash
+./gradlew bootRun
 ```
 
-</div>
-</details>
+React 실행 명령, API 문서 주소 및 배포 주소는 확인된 이후 추가합니다.
 
-<br>
+## 7. 테스트 및 개선 기록
 
-<details>
-<summary> 주요 코드에 대한 설명을 입력하세요. </summary>
+### 검증 예정 항목
 
-<div>
-설명
+| 항목 | 확인할 내용 |
+| --- | --- |
+| 기본 API | 정상 입력·잘못된 입력·존재하지 않는 데이터 처리 |
+| 재고 변경 | 잘못된 수량 입력과 음수 재고 방지, 변경 이력 기록 |
+| 동시 요청 | 여러 요청이 동시에 재고를 변경할 때 갱신 누락 여부 |
+| 부족 판단 | 최소 비축량과 비교한 부족 여부의 정확성 |
+| Redis 캐시 | 도입 전후 응답시간, 적중률, 갱신 지연 및 DB와의 차이 |
+| Kafka 이벤트 | 중복 처리, 처리 지연 및 중단 후 재처리 결과 |
+| React 화면 | API 결과 표시, 입력 검증 및 오류 안내 |
 
-```jsx
+응답시간과 처리량은 테스트 환경·데이터 규모·동시 요청 수와 함께 기록합니다. 아직 측정하지 않은 성능 개선 수치는 기재하지 않습니다.
 
-```
+### 트러블슈팅 및 회고
 
-</div>
-</details>
+실제로 겪고 검증한 사례를 다음 순서로 기록할 예정입니다.
 
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="11">🚦 11. 트러블 슈팅</span>
-
-<details>
-<summary> 트러블 슈팅을 입력하세요. </summary>
-
-<div>
-
-1. 문제 상황 <br />
-
-2. 시도 <br />
-
-3. 해결방안 <br />
-
-</div>
-</details>
-
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="12">12. 📝 프로젝트 회고</span>
-
-프로젝트 진행 후 느낀 점과 개선할 점을 적어주세요. 블로그에 작성하셨다면 블로그 링크를 첨부해주세요.
-
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
-
-<br>
-
-## <span id="13">13. 🛠️ 시작 가이드</span>
-
-### Installation
-
-```shell
-# 1. 클론하기
-$ git clone https://github.com/CAREER-For-Me/Career-web.git .
-
-# 2. 의존성 설치하기
-$ yarn
-
-# 3. 개발 서버 실행하기
-$ yarn dev
-```
-
-<br>
-
-<!-- Top Button -->
-<p style='background: black; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-left: auto;'><a href="#top" style='color: white; '>▲</a></p>
+1. 문제 상황
+2. 원인과 확인 근거
+3. 시도한 해결 방법
+4. 적용 결과와 검증 방법
+5. 남은 한계와 개선할 점
