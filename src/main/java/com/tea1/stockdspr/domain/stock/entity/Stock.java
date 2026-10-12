@@ -42,4 +42,10 @@ public class Stock {
     public void discardStock() {
         this.usageStatus = StockStatus.NOT_IN_USE;
     }
+
+    public void stockUpdateInfo(int onHandQty, LocalDate expirationDate, StockStatus usageStatus) {
+        this.onHandQty = onHandQty;
+        this.expirationDate = expirationDate;
+        this.usageStatus = usageStatus;
+    }
 }

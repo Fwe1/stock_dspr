@@ -14,4 +14,7 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     @Query("SELECT s FROM Stock s  WHERE s.item.id = :ItemId")
     List<Stock> findByItemId(@Param("ItemId") Long id);
 
+    //삭제 시 조건에 필요
+    boolean existsByItem_Id(Long itemId);
+
 }
