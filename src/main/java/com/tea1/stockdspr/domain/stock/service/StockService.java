@@ -9,22 +9,26 @@ import com.tea1.stockdspr.domain.stock.dto.StockResponseDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockUpdateDTO;
 import com.tea1.stockdspr.domain.stock.entity.Stock;
 import com.tea1.stockdspr.domain.stock.repository.StockRepository;
+import com.tea1.stockdspr.global.response.exception.CustomException;
+import com.tea1.stockdspr.global.response.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StockService {
 
     private final StockRepository stockRepository;
     private final ItemRepository itemRepository;
     private final FacilityRepository facilityRepository;
 
-    public Long createStock(StockRequestDTO stockRequestDTO) {
+    @Transactional
+    public Long createStock(Long itemId, StockRequestDTO stockRequestDTO) {
 
-        Item item = itemRepository.findById(stockRequestDTO.getItemId())
+        Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아이템입니다"));
 
         //로그인 구현 후 삭제 예정
@@ -37,9 +41,12 @@ public class StockService {
                 .onHandQty(stockRequestDTO.getOnHandQty())
                 .expirationDate(stockRequestDTO.getExpirationDate()).build();
 
-        return stock.getId();
+        Stock savedStock = stockRepository.save(stock);
+
+        return savedStock.getId();
     }
 
+    @Transactional
     public void updateStock(Long stockId, StockUpdateDTO dto) {
 
         Stock s = stockRepository.findById(stockId)
@@ -59,8 +66,11 @@ public class StockService {
                         .usageStatus(s.getUsageStatus()).build()).toList();
     }
 
+    @Transactional
     public void deleteStock(Long stockId) {
+        Stock s = stockRepository.findById(stockId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
+        stockRepository.delete(s);
     }
-
 }

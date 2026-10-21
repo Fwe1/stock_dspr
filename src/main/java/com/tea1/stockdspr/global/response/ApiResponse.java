@@ -15,7 +15,13 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, "성공", data);
     }
 
-    public static <T> ApiResponse exception(T data) {
-        return new ApiResponse<>(false, "실패", data);
+//    public static <T> ApiResponse exception(T data) {
+//        return new ApiResponse<>(false, "실패", data);
+//    }
+
+    public static ApiResponse<Void> fail(String message) {
+        return new ApiResponse<>(false, message, null);
     }
+
+
 }

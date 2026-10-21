@@ -9,7 +9,6 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class StockRequestDTO {
 
-    private Long  itemId;
 
     //로그인 구현 시 삭제
     private Long facilityId;
