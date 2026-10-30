@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -20,7 +21,7 @@ public class ItemController {
 
     //아이템 정보 등록
     //아이템 Id만 반환
-    @PostMapping("/item")
+    @PostMapping("/items")
     public ResponseEntity<ApiResponse<Map<String, Long>>> createItem(@RequestBody @Valid ItemRequestDTO itemRequestDTO) {
 
         Long itemId = itemService.createItem(itemRequestDTO);
@@ -29,9 +30,18 @@ public class ItemController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.response(result));
     }
 
+    //아이템 목록
+    @GetMapping("/items")
+    public ResponseEntity<ApiResponse<List<ItemResponseDTO>>> getItems() {
+
+        List<ItemResponseDTO> result = itemService.findItems();
+
+        return ResponseEntity.ok(ApiResponse.response(result));
+    }
+
     //아이템 정보
     //아이템 정보 반환
-    @GetMapping("/item/{itemId}")
+    @GetMapping("/items/{itemId}")
     public ResponseEntity<ApiResponse<ItemResponseDTO>> getItem(@PathVariable Long itemId) {
 
         ItemResponseDTO dto = itemService.findOne(itemId);
@@ -42,7 +52,7 @@ public class ItemController {
 
     //재고 수정
     //반환값 없음
-    @PatchMapping("/item/{itemId}")
+    @PatchMapping("/items/{itemId}")
     public ResponseEntity<ApiResponse<Void>> updateItem(@PathVariable Long itemId, @RequestBody @Valid ItemRequestDTO itemRequestDTO) {
 
         itemService.updateItem(itemId, itemRequestDTO);
@@ -51,10 +61,12 @@ public class ItemController {
 
     //아이템 삭제
     //삭제 품목 반환
-    @DeleteMapping("/item/{itemId}")
+    @DeleteMapping("/items/{itemId}")
     public ResponseEntity<ApiResponse<ItemResponseDTO>> deleteItem(@PathVariable Long itemId) {
         ItemResponseDTO dto = itemService.findOne(itemId);
         itemService.deleteItem(itemId);
         return ResponseEntity.ok(ApiResponse.response(dto));
     }
+
+
 }

@@ -17,4 +17,7 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     //삭제 시 조건에 필요
     boolean existsByItem_Id(Long itemId);
 
+    //기관 삭제 시 조건에 필요
+    boolean existsByFacility_Id(Long facilityId);
+
 }

@@ -11,7 +11,9 @@ public class StockResponseDTO {
 
     private Long id;
 
-    private int onHandQty;
+    private Integer onHandQty;
+
+    private Integer reservedQty;
 
     private LocalDate expirationDate;
 

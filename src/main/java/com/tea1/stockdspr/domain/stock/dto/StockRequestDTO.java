@@ -1,8 +1,10 @@
 package com.tea1.stockdspr.domain.stock.dto;
 
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 
 @Getter
@@ -10,13 +12,15 @@ import java.time.LocalDate;
 public class StockRequestDTO {
 
 
-    //로그인 구현 시 삭제
+//    //로그인 구현 시 삭제
+    @NotNull
     private Long facilityId;
 
-    @NotEmpty
-    private int onHandQty;
+    @NotNull
+    @PositiveOrZero
+    private Integer onHandQty;
 
-    @NotEmpty
+
     private LocalDate expirationDate;
 
 }

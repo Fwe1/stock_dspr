@@ -9,7 +9,6 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -93,11 +92,8 @@ class StockRepositoryTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    // Facility의 기본 생성자가 protected라서 테스트에서는 리플렉션으로 생성한다.
     private Facility facility(String name) {
-        Facility facility = BeanUtils.instantiateClass(Facility.class);
-        facility.setFacilityName(name);
-        return facility;
+        return Facility.builder().facilityName(name).build();
     }
 
     private Stock stock(Item item, Facility facility, int quantity, LocalDate expirationDate) {
