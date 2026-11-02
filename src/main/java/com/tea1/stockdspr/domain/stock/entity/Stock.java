@@ -7,13 +7,15 @@ import com.tea1.stockdspr.global.response.exception.CustomException;
 import com.tea1.stockdspr.global.response.exception.ErrorCode;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.LocalDate;
 
 @Entity
-@Getter @Setter @Builder
+@Getter @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@DynamicUpdate
 @Table(name="stock")
 public class Stock {
 

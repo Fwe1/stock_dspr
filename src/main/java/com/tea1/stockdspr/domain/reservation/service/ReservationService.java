@@ -48,8 +48,11 @@ public class ReservationService {
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
         checkReservable(stock);
 
-        //가용 수량이 부족하면 NOT_ENOUGH_STOCK
-        stock.reserve(reservationRequestDTO.getQuantity());
+        //가용 수량이 부족하면 NOT_ENOUGH_STOCK, UPDATE 한 문장으로 함
+        int updated = stockRepository.increaseReservedQty(stockId, reservationRequestDTO.getQuantity());
+        if (updated == 0) {
+            throw new CustomException(ErrorCode.NOT_ENOUGH_STOCK);
+        }
 
         Reservation reservation = reservationRepository.save(
                 new Reservation(stock, reservationRequestDTO.getQuantity(), idempotencyKey));
@@ -96,7 +99,8 @@ public class ReservationService {
         checkHeldAndNotExpired(reservation);
 
         reservation.reject();
-        reservation.getStock().releaseReservation(reservation.getQuantity());
+//        reservation.getStock().releaseReservation(reservation.getQuantity());
+        releaseReservedQty(reservation);
         log.info("예약 거절 reservationId={}", reservationId);
         return toResponseDTO(reservation);
     }
@@ -115,7 +119,8 @@ public class ReservationService {
         }
 
         reservation.cancel();
-        reservation.getStock().releaseReservation(reservation.getQuantity());
+//        reservation.getStock().releaseReservation(reservation.getQuantity());
+        releaseReservedQty(reservation);
         log.info("예약 취소 reservationId={}", reservationId);
         return toResponseDTO(reservation);
     }
@@ -129,7 +134,8 @@ public class ReservationService {
 
         for (Reservation reservation : overdue) {
             reservation.expire();
-            reservation.getStock().releaseReservation(reservation.getQuantity());
+//            reservation.getStock().releaseReservation(reservation.getQuantity());
+            releaseReservedQty(reservation);
             log.info("예약 만료 reservationId={}", reservation.getId());
         }
         return overdue.size();
@@ -173,5 +179,13 @@ public class ReservationService {
                 .status(reservation.getStatus())
                 .expiresAt(reservation.getExpiresAt())
                 .build();
+    }
+
+    //거절·취소·만료 시 예약 수량 반환
+    private void releaseReservedQty(Reservation reservation) {
+        int updated = stockRepository.decreaseReservedQty(reservation.getStock().getId(), reservation.getQuantity());
+        if (updated == 0) {
+            throw new IllegalStateException("예약 수량이 반환할 수량보다 적습니다. stockId=" + reservation.getStock().getId());
+        }
     }
 }
