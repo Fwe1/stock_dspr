@@ -4,6 +4,7 @@ import com.tea1.stockdspr.domain.item.service.ItemService;
 import com.tea1.stockdspr.domain.stock.dto.StockRequestDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockResponseDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockUpdateDTO;
+import com.tea1.stockdspr.domain.stock.service.StockQueryService;
 import com.tea1.stockdspr.domain.stock.service.StockService;
 import com.tea1.stockdspr.global.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class StockController {
 
     private final StockService stockService;
+    private final StockQueryService stockQueryService;
 
     //stock등록
     @PostMapping("/items/{itemId}/stocks")
@@ -45,7 +47,8 @@ public class StockController {
     @GetMapping("/items/{itemId}/stocks")
     public ResponseEntity<ApiResponse<List<StockResponseDTO>>> getStocks(@PathVariable Long itemId) {
 
-        List<StockResponseDTO> result = stockService.findStockByItem(itemId);
+//        List<StockResponseDTO> result = stockService.findStockByItem(itemId);
+        List<StockResponseDTO> result = stockQueryService.findStockByItem(itemId);
 
         return ResponseEntity.ok(ApiResponse.response(result));
     }

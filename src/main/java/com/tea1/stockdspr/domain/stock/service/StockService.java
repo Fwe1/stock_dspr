@@ -6,6 +6,7 @@ import com.tea1.stockdspr.domain.item.dto.ItemResponseDTO;
 import com.tea1.stockdspr.domain.item.entity.Item;
 import com.tea1.stockdspr.domain.item.repository.ItemRepository;
 import com.tea1.stockdspr.domain.reservation.repository.ReservationRepository;
+import com.tea1.stockdspr.domain.stock.cache.StockCache;
 import com.tea1.stockdspr.domain.stock.dto.StockRequestDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockResponseDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockUpdateDTO;
@@ -28,6 +29,7 @@ public class StockService {
     private final ItemRepository itemRepository;
     private final FacilityRepository facilityRepository;
     private final ReservationRepository reservationRepository;
+    private final StockCache stockCache;
 
     @Transactional
     public Long createStock(Long itemId, StockRequestDTO stockRequestDTO) {
@@ -46,6 +48,7 @@ public class StockService {
                 .expirationDate(stockRequestDTO.getExpirationDate()).build();
 
         Stock savedStock = stockRepository.save(stock);
+        stockCache.evictAfterCommit(itemId);
 
         return savedStock.getId();
     }
@@ -94,6 +97,7 @@ public class StockService {
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
         s.stockUpdateInfo(dto.getOnHandQty(), dto.getExpirationDate());
+        stockCache.evictAfterCommit(s.getItem().getId());
     }
 
     public List<StockResponseDTO> findStocks() {
@@ -119,6 +123,7 @@ public class StockService {
         }
 
         stockRepository.delete(s);
+        stockCache.evictAfterCommit(s.getItem().getId());
     }
 
     @Transactional
@@ -127,5 +132,6 @@ public class StockService {
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
         s.discardStock();
+        stockCache.evictAfterCommit(s.getItem().getId());
     }
 }

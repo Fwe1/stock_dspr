@@ -6,6 +6,7 @@ import com.tea1.stockdspr.domain.reservation.dto.ReservationResponseDTO;
 import com.tea1.stockdspr.domain.reservation.entity.Reservation;
 import com.tea1.stockdspr.domain.reservation.entity.ReservationStatus;
 import com.tea1.stockdspr.domain.reservation.repository.ReservationRepository;
+import com.tea1.stockdspr.domain.stock.cache.StockCache;
 import com.tea1.stockdspr.domain.stock.entity.Stock;
 import com.tea1.stockdspr.domain.stock.entity.StockStatus;
 import com.tea1.stockdspr.domain.stock.repository.StockRepository;
@@ -18,8 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -29,6 +32,7 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final StockRepository stockRepository;
+    private final StockCache stockCache;
 
     //재고(로트)에 임시 예약(HELD)을 만든다 (C-3)
     //동시성 제어 없음: 읽고 검사한 뒤 수량을 바꾸는 방식이라 동시 요청이면 초과 예약될 수 있음
@@ -53,6 +57,7 @@ public class ReservationService {
         if (updated == 0) {
             throw new CustomException(ErrorCode.NOT_ENOUGH_STOCK);
         }
+        stockCache.evictAfterCommit(stock.getItem().getId());
 
         Reservation reservation = reservationRepository.save(
                 new Reservation(stock, reservationRequestDTO.getQuantity(), idempotencyKey));
@@ -101,6 +106,7 @@ public class ReservationService {
         reservation.reject();
 //        reservation.getStock().releaseReservation(reservation.getQuantity());
         releaseReservedQty(reservation);
+        stockCache.evictAfterCommit(reservation.getStock().getItem().getId());
         log.info("예약 거절 reservationId={}", reservationId);
         return toResponseDTO(reservation);
     }
@@ -121,6 +127,7 @@ public class ReservationService {
         reservation.cancel();
 //        reservation.getStock().releaseReservation(reservation.getQuantity());
         releaseReservedQty(reservation);
+        stockCache.evictAfterCommit(reservation.getStock().getItem().getId());
         log.info("예약 취소 reservationId={}", reservationId);
         return toResponseDTO(reservation);
     }
@@ -131,13 +138,15 @@ public class ReservationService {
     public int expireOverdue(LocalDateTime now) {
 
         List<Reservation> overdue = reservationRepository.findOverdue(ReservationStatus.HELD, now);
-
+        Set<Long> itemIds = new HashSet<>();
         for (Reservation reservation : overdue) {
             reservation.expire();
 //            reservation.getStock().releaseReservation(reservation.getQuantity());
             releaseReservedQty(reservation);
+            itemIds.add(reservation.getStock().getItem().getId());
             log.info("예약 만료 reservationId={}", reservation.getId());
         }
+        itemIds.forEach(stockCache::evictAfterCommit);
         return overdue.size();
     }
 
