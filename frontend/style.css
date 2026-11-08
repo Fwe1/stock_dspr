@@ -25,7 +25,8 @@ thead { background: #f2f6f9; font-size: 14px; }
 @media (max-width: 600px) { .filters { grid-template-columns: 1fr; gap: 12px; } h1 { margin-top: 24px; } td, th { padding: 10px; } }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .primary { color: white; background: #19499d; border-color: #19499d; font-weight: 600; }
-button:disabled { opacity: .6; cursor: wait; }
+button:disabled { opacity: .6; cursor: not-allowed; }
+.expiry-note { margin-left: 6px; font-size: 13px; color: #8b3d28; }
 .receipt { background: #edf4f8; padding: 18px 24px; margin: 18px 0; }
 .receipt h3 { margin: 0; font-size: 18px; }
 .receipt-context { margin: 2px 0 14px; font-size: 14px; color: #50657c; }

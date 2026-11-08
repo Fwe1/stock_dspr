@@ -119,6 +119,7 @@ public class StockService {
                 .lotNumber(stock.getLotNumber())
                 .onHandQty(stock.getOnHandQty())
                 .expirationDate(stock.getExpirationDate())
+                .expired(stock.getExpirationDate() != null && stock.getExpirationDate().isBefore(LocalDate.now()))
                 .reservedQty(stock.getReservedQty())
                 .usageStatus(stock.getUsageStatus())
                 .build();
@@ -129,7 +130,7 @@ public class StockService {
     @Transactional
     public void updateStock(Long stockId, StockUpdateDTO dto) {
 
-        Stock s = stockRepository.findById(stockId)
+        Stock s = stockRepository.lockById(stockId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
         s.stockUpdateInfo(dto.getOnHandQty(), dto.getExpirationDate());
@@ -144,7 +145,7 @@ public class StockService {
 
     @Transactional
     public void deleteStock(Long stockId) {
-        Stock s = stockRepository.findById(stockId)
+        Stock s = stockRepository.lockById(stockId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
         //예약 이력이 있는 재고는 FK 때문에 지울 수 없음
@@ -152,6 +153,9 @@ public class StockService {
             throw new CustomException(ErrorCode.STOCK_HAS_RESERVATION);
         }
 
+        if (receiptRepository.existsByStockId(stockId)) {
+            throw new CustomException(ErrorCode.STOCK_HAS_RECEIPT);
+        }
         stockRepository.delete(s);
     }
 

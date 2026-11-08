@@ -18,6 +18,7 @@ public class StockResponseDTO {
     private Integer reservedQty;
 
     private LocalDate expirationDate;
+    private boolean expired;
 
     private StockStatus usageStatus; //IN_USE, NOT_IN_USE
 

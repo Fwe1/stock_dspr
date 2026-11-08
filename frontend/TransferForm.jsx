@@ -1,12 +1,9 @@
 import React, { useRef, useState } from "react";
 
-function readPending(key) {
-  try { return JSON.parse(sessionStorage.getItem(key)); }
-  catch { return null; }
-}
+import { readPending, savePending, forgetPending } from "./pendingRequest";
 
-function forgetPending(key) {
-  try { sessionStorage.removeItem(key); } catch { /* Storage may be disabled. */ }
+export function transferStorageKey(facility, item) {
+  return "transfer-pending:" + facility.id + "/" + item.id;
 }
 
 function localDateTime(iso) {
@@ -15,7 +12,7 @@ function localDateTime(iso) {
 }
 
 export default function TransferForm({ facility, item, setBusy, onClose, onSaved }) {
-  const storageKey = "transfer-pending:" + facility.id + "/" + item.id;
+  const storageKey = transferStorageKey(facility, item);
   const [pending, setPending] = useState(() => readPending(storageKey));
   const inFlight = useRef(false);
   const [sending, setSending] = useState(false);
@@ -48,12 +45,12 @@ export default function TransferForm({ facility, item, setBusy, onClose, onSaved
     inFlight.current = true;
     setBusy(true); setSending(true); setPending(body); setError("");
     try {
-      try { sessionStorage.setItem(storageKey, JSON.stringify(body)); } catch { /* In-memory retry remains available. */ }
+      savePending(storageKey, body);
       const response = await fetch("/facilities/" + facility.id + "/transfer-requests", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
       });
       const result = await response.json();
-      if (response.status >= 400 && response.status < 500) {
+      if ([400, 404, 409].includes(response.status) && result.success === false) {
         forgetPending(storageKey); setPending(null);
         setError(result.message || "요청 내용을 확인해 주세요."); return;
       }
@@ -77,7 +74,7 @@ export default function TransferForm({ facility, item, setBusy, onClose, onSaved
       <label>요청 사유<input name="reason" required maxLength={500} value={fields.reason} onChange={change}/></label>
     </div></fieldset>
     {error && <p className="form-error" role="alert">{error}</p>}
-    <div className="actions"><button className="primary" disabled={sending}>{sending ? "등록 중…" : pending ? "등록 결과 다시 확인" : "요청 등록"}</button>
+    <div className="actions"><button className="primary" disabled={sending || (!pending && facility.operationStatus === "SUSPENDED")}>{sending ? "등록 중…" : pending ? "등록 결과 다시 확인" : "요청 등록"}</button>
     <button type="button" disabled={sending} onClick={onClose}>닫기</button></div>
   </form>;
 }

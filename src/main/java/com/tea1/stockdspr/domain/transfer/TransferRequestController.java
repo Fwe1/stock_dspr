@@ -3,8 +3,6 @@ package com.tea1.stockdspr.domain.transfer;
 import com.tea1.stockdspr.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -25,9 +23,4 @@ public class TransferRequestController {
         return ApiResponse.response(service.sent(facilityId));
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> invalidBody() {
-        return ApiResponse.fail("요청 값과 필요 시각의 형식을 확인해 주세요.");
-    }
 }

@@ -6,5 +6,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface LotReceiptRepository extends JpaRepository<LotReceipt, Long> {
+    boolean existsByStockId(Long stockId);
     Optional<LotReceipt> findByFacilityIdAndRequestId(Long facilityId, UUID requestId);
 }

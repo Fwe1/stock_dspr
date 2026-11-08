@@ -49,6 +49,18 @@ class LotReceiptTest {
     }
 
     @Test
+    void deletingAReceivedLotCannotBreakReplayOrEraseItsBalance() {
+        var org = facilities.save(Facility.builder().facilityName("한빛").build()).getId();
+        var item = items.save(Item.builder().name("품목 A").build()).getId();
+        var delivery = new LotReceiptRequest(UUID.randomUUID(), "LOT-A", LocalDate.now().plusDays(1), 12, "입고");
+        var stockId = service.receiveLot(org, item, delivery);
+        assertThatThrownBy(() -> service.deleteStock(stockId))
+                .isInstanceOf(CustomException.class).hasMessageContaining("입고 이력");
+        assertThat(service.receiveLot(org, item, delivery)).isEqualTo(stockId);
+        assertThat(service.findOne(stockId).getOnHandQty()).isEqualTo(12);
+    }
+
+    @Test
     void refusesConflictingExpiryForAnExistingLot() {
         var org = facilities.save(Facility.builder().facilityName("한빛").build()).getId();
         var item = items.save(Item.builder().name("품목 A").build()).getId();

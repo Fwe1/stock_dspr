@@ -21,6 +21,10 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     List<Stock> findByFacility_IdAndItem_IdOrderById(Long facilityId, Long itemId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Stock s where s.id = :id")
+    Optional<Stock> lockById(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Stock> findByFacility_IdAndItem_IdAndLotNumber(Long facilityId, Long itemId, String lotNumber);
 
     //삭제 시 조건에 필요

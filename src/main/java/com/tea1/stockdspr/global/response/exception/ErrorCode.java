@@ -32,6 +32,7 @@ public enum ErrorCode {
     FACILITY_HAS_STOCK(HttpStatus.CONFLICT, "재고가 등록된 지점은 삭제할 수 없습니다."),
     ITEM_HAS_STOCK(HttpStatus.CONFLICT, "재고가 등록된 품목은 삭제할 수 없습니다."),
     STOCK_HAS_RESERVATION(HttpStatus.CONFLICT, "예약이 걸린 재고는 삭제할 수 없습니다."),
+    STOCK_HAS_RECEIPT(HttpStatus.CONFLICT, "입고 이력이 있는 재고는 삭제할 수 없습니다."),
     FACILITY_SUSPENDED(HttpStatus.CONFLICT, "운영이 중지된 지점의 재고는 예약할 수 없습니다."),
     STOCK_NOT_RESERVABLE(HttpStatus.CONFLICT, "사용 중지되었거나 유효기간이 지난 재고는 예약할 수 없습니다."),
     NOT_ENOUGH_STOCK(HttpStatus.CONFLICT, "가용 수량이 부족합니다."),

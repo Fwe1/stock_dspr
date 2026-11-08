@@ -3,6 +3,7 @@ package com.tea1.stockdspr.global.response.exception;
 import com.tea1.stockdspr.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,6 +12,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> invalidBody() {
+        return ResponseEntity.badRequest().body(ApiResponse.fail("입력값의 형식을 확인해 주세요."));
+    }
 
     // 우리가 직접 던진 예외: ErrorCode에 적힌 상태 코드 그대로
     @ExceptionHandler(CustomException.class)

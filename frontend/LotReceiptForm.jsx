@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { readPending, savePending, forgetPending } from "./pendingRequest";
 
 function today() {
   const date = new Date();
@@ -7,12 +8,12 @@ function today() {
 }
 
 export default function LotReceiptForm({ facility, item, onCancel, onSaved, setBusy }) {
-  const requestId = useRef(null);
+  const storageKey = "receipt-pending:" + facility.id + "/" + item.id;
+  const [unconfirmed, setUnconfirmed] = useState(() => readPending(storageKey));
   const inFlight = useRef(false);
   const [pending, setPending] = useState(false);
-  const [unconfirmed, setUnconfirmed] = useState(false);
   const [error, setError] = useState("");
-  const [fields, setFields] = useState({ lotNumber: "", quantity: "", expirationDate: "", reason: "" });
+  const [fields, setFields] = useState(() => unconfirmed ?? { lotNumber: "", quantity: "", expirationDate: "", reason: "" });
 
   function update(event) {
     setFields({ ...fields, [event.target.name]: event.target.value });
@@ -27,7 +28,8 @@ export default function LotReceiptForm({ facility, item, onCancel, onSaved, setB
       setError("로트 번호와 입고 사유를 입력해 주세요.");
       return;
     }
-    requestId.current ??= crypto.randomUUID();
+    const payload = unconfirmed ?? { ...fields, lotNumber, reason, quantity: Number(fields.quantity), requestId: crypto.randomUUID() };
+    savePending(storageKey, payload);
     inFlight.current = true;
     setBusy(true);
     setPending(true);
@@ -36,21 +38,21 @@ export default function LotReceiptForm({ facility, item, onCancel, onSaved, setB
       const response = await fetch("/facilities/" + facility.id + "/items/" + item.id + "/receipts", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ ...fields, quantity: Number(fields.quantity), lotNumber, reason, requestId: requestId.current })
+        body: JSON.stringify(payload)
       });
-      if (response.status >= 400 && response.status < 500) {
-        const body = await response.json();
-        requestId.current = null;
-        setUnconfirmed(false);
+      const body = await response.json();
+      if ([400, 404, 409].includes(response.status) && body.success === false) {
+        forgetPending(storageKey);
+        setUnconfirmed(null);
         setError(body.message || "입고 정보를 확인해 주세요.");
         return;
       }
       if (!response.ok) throw new Error();
-      const body = await response.json();
       if (!body.success || !body.data?.stockId) throw new Error();
+      forgetPending(storageKey);
       onSaved({ lotNumber, quantity: Number(fields.quantity), stockId: body.data.stockId });
     } catch {
-      setUnconfirmed(true);
+      setUnconfirmed(payload);
       setError("서버의 등록 결과를 확인하지 못했습니다. 같은 요청으로 다시 확인해 주세요.");
     } finally {
       inFlight.current = false;
@@ -62,7 +64,7 @@ export default function LotReceiptForm({ facility, item, onCancel, onSaved, setB
   return <form className="receipt" onSubmit={submit}>
     <h3>로트 입고 등록</h3>
     <p className="receipt-context">{facility.facilityName} · {item.name}</p>
-    <fieldset disabled={pending || unconfirmed}><div className="receipt-fields">
+    <fieldset disabled={pending || !!unconfirmed}><div className="receipt-fields">
       <label>로트 번호<input name="lotNumber" required maxLength={64} value={fields.lotNumber} onChange={update} autoFocus /></label>
       <label>입고 수량<input name="quantity" type="number" min="1" max="2147483647" step="1" required value={fields.quantity} onChange={update} /></label>
       <label>유효기간<input name="expirationDate" type="date" min={today()} required value={fields.expirationDate} onChange={update} /></label>

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import LotReceiptForm from "./LotReceiptForm.jsx";
-import TransferForm from "./TransferForm.jsx";
+import TransferForm, { transferStorageKey } from "./TransferForm.jsx";
+import { readPending } from "./pendingRequest";
 import "./style.css";
 
 async function fetchList(path, signal) {
@@ -39,6 +40,8 @@ function StockRows({ facility, item, setBusy, onRequestSaved }) {
   const stocks = useList(path);
   const [form, setForm] = useState(null);
   const [saved, setSaved] = useState(null);
+  const suspended = facility.operationStatus === "SUSPENDED";
+  const retryTransfer = !!readPending(transferStorageKey(facility, item));
   function complete(receipt) {
     setSaved(receipt);
     setForm(null);
@@ -48,9 +51,10 @@ function StockRows({ facility, item, setBusy, onRequestSaved }) {
     <div className="ledger-heading"><div><p>{facility.facilityName}</p><h2 id="stock-name">{item.name}</h2></div>
       <div className="actions">{stocks.state === "ready" && <span>재고 기록 {stocks.data.length}건</span>}
         {!form && <><button onClick={() => { setSaved(null); setForm("receipt"); }}>로트 입고 등록</button>
-          <button className="primary" onClick={() => { setSaved(null); setForm("transfer"); }}>전배 요청</button></>}
+          <button className="primary" disabled={suspended && !retryTransfer} onClick={() => { setSaved(null); setForm("transfer"); }}>전배 요청</button></>}
       </div>
     </div>
+    {suspended && <p className="notice">운영 중지된 기관은 새 전배 요청을 등록할 수 없습니다.</p>}
     {form === "transfer" && <TransferForm facility={facility} item={item} setBusy={setBusy} onClose={() => setForm(null)} onSaved={onRequestSaved} />}
     {form === "receipt" && <LotReceiptForm facility={facility} item={item} setBusy={setBusy}
       onCancel={() => setForm(null)} onSaved={complete} />}
@@ -63,7 +67,7 @@ function StockRows({ facility, item, setBusy, onRequestSaved }) {
         <thead><tr>{["재고 ID", "로트 번호", "실재고", "예약 수량", "유효기간", "사용 상태"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
         <tbody>{stocks.data.map(stock => <tr key={stock.id} className={saved?.stockId === stock.id ? "received" : undefined}>
           <th scope="row">{stock.id}</th><td>{stock.lotNumber ?? "미등록"}</td><td>{stock.onHandQty.toLocaleString("ko-KR")}</td>
-          <td>{stock.reservedQty.toLocaleString("ko-KR")}</td><td>{stock.expirationDate ?? "미등록"}</td>
+          <td>{stock.reservedQty.toLocaleString("ko-KR")}</td><td>{stock.expirationDate ?? "미등록"}{stock.expired && <strong className="expiry-note">기한 경과</strong>}</td>
           <td>{{ IN_USE: "사용 중", NOT_IN_USE: "사용 중지" }[stock.usageStatus] ?? "미지정"}</td>
         </tr>)}</tbody>
       </table></div>)}
