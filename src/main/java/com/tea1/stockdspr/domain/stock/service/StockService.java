@@ -2,7 +2,9 @@ package com.tea1.stockdspr.domain.stock.service;
 
 import com.tea1.stockdspr.domain.facility.entity.Facility;
 import com.tea1.stockdspr.domain.facility.repository.FacilityRepository;
-import com.tea1.stockdspr.domain.item.dto.ItemResponseDTO;
+import com.tea1.stockdspr.domain.stock.dto.LotReceiptRequest;
+import com.tea1.stockdspr.domain.stock.entity.LotReceipt;
+import com.tea1.stockdspr.domain.stock.repository.LotReceiptRepository;
 import com.tea1.stockdspr.domain.item.entity.Item;
 import com.tea1.stockdspr.domain.item.repository.ItemRepository;
 import com.tea1.stockdspr.domain.reservation.repository.ReservationRepository;
@@ -17,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import java.util.Optional;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,34 @@ public class StockService {
     private final ItemRepository itemRepository;
     private final FacilityRepository facilityRepository;
     private final ReservationRepository reservationRepository;
+
+    private final LotReceiptRepository receiptRepository;
+
+    @Transactional
+    public Long receiveLot(Long facilityId, Long itemId, LotReceiptRequest request) {
+        // Serialize the first receipt too, when there is no lot row to lock yet.
+        Facility facility = facilityRepository.lockForReceipt(facilityId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FACILITY_NOT_FOUND));
+        var prior = receiptRepository.findByFacilityIdAndRequestId(facilityId, request.requestId());
+        if (prior.isPresent()) {
+            if (!prior.get().matches(itemId, request)) {
+                throw new CustomException(ErrorCode.RECEIPT_CONFLICT);
+            }
+            return prior.get().getStockId();
+        }
+        if (request.expirationDate().isBefore(LocalDate.now())) {
+            throw new CustomException(ErrorCode.LOT_EXPIRED);
+        }
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+        Stock stock = stockRepository.findByFacility_IdAndItem_IdAndLotNumber(facilityId, itemId, request.lotNumber())
+                .orElseGet(() -> Stock.builder().facility(facility).item(item).lotNumber(request.lotNumber())
+                        .expirationDate(request.expirationDate()).build());
+        stock.receive(request.quantity(), request.expirationDate());
+        Stock saved = stockRepository.save(stock);
+        receiptRepository.save(new LotReceipt(saved, request));
+        return saved.getId();
+    }
 
     @Transactional
     public Long createStock(Long itemId, StockRequestDTO stockRequestDTO) {
@@ -56,12 +86,7 @@ public class StockService {
         Stock stock = stockRepository.findById(stockId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
-        return StockResponseDTO.builder()
-                .id(stock.getId())
-                .onHandQty(stock.getOnHandQty())
-                .expirationDate(stock.getExpirationDate())
-                .reservedQty(stock.getReservedQty())
-                .usageStatus(stock.getUsageStatus()).build();
+        return toResponseDTO(stock);
 
     }
 
@@ -91,6 +116,7 @@ public class StockService {
     private StockResponseDTO toResponseDTO(Stock stock) {
         return StockResponseDTO.builder()
                 .id(stock.getId())
+                .lotNumber(stock.getLotNumber())
                 .onHandQty(stock.getOnHandQty())
                 .expirationDate(stock.getExpirationDate())
                 .reservedQty(stock.getReservedQty())
@@ -113,12 +139,7 @@ public class StockService {
 
         List<Stock> stocks = stockRepository.findAll();
         return stocks.stream()
-                .map(s -> StockResponseDTO.builder()
-                        .id(s.getId())
-                        .onHandQty(s.getOnHandQty())
-                        .expirationDate(s.getExpirationDate())
-                        .reservedQty(s.getReservedQty())
-                        .usageStatus(s.getUsageStatus()).build()).toList();
+                .map(this::toResponseDTO).toList();
     }
 
     @Transactional

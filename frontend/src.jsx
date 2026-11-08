@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import LotReceiptForm from "./LotReceiptForm.jsx";
 import "./style.css";
 
 async function fetchList(path, signal) {
@@ -32,21 +33,33 @@ function Message({ children, retry }) {
   </div>;
 }
 
-function StockRows({ facility, item }) {
+function StockRows({ facility, item, setBusy }) {
   const path = "/facilities/" + facility.id + "/items/" + item.id + "/stocks";
   const stocks = useList(path);
+  const [receiving, setReceiving] = useState(false);
+  const [saved, setSaved] = useState(null);
+  function complete(receipt) {
+    setSaved(receipt);
+    setReceiving(false);
+    stocks.retry();
+  }
   return <section className="ledger" aria-labelledby="stock-name">
     <div className="ledger-heading"><div><p>{facility.facilityName}</p><h2 id="stock-name">{item.name}</h2></div>
-      {stocks.state === "ready" && <span>재고 기록 {stocks.data.length}건</span>}
+      <div className="actions">{stocks.state === "ready" && <span>재고 기록 {stocks.data.length}건</span>}
+        {!receiving && <button className="primary" onClick={() => { setSaved(null); setReceiving(true); }}>로트 입고 등록</button>}
+      </div>
     </div>
+    {receiving && <LotReceiptForm facility={facility} item={item} setBusy={setBusy}
+      onCancel={() => setReceiving(false)} onSaved={complete} />}
+    {saved && <p role="status" className="confirmation">{saved.lotNumber} · {saved.quantity.toLocaleString("ko-KR")}개 입고를 기록했습니다.</p>}
     {stocks.state === "loading" && <Message>재고를 불러오는 중입니다.</Message>}
     {stocks.state === "error" && <Message retry={stocks.retry}>재고를 불러오지 못했습니다.</Message>}
     {stocks.state === "ready" && (stocks.data.length === 0
       ? <Message>이 기관에 등록된 해당 의약품 재고가 없습니다.</Message>
       : <div className="scroll"><table aria-label={facility.facilityName + " " + item.name + " 재고"}>
-        <thead><tr>{["재고 ID", "실재고", "예약 수량", "유효기간", "사용 상태"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
-        <tbody>{stocks.data.map(stock => <tr key={stock.id}>
-          <th scope="row">{stock.id}</th><td>{stock.onHandQty.toLocaleString("ko-KR")}</td>
+        <thead><tr>{["재고 ID", "로트 번호", "실재고", "예약 수량", "유효기간", "사용 상태"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
+        <tbody>{stocks.data.map(stock => <tr key={stock.id} className={saved?.stockId === stock.id ? "received" : undefined}>
+          <th scope="row">{stock.id}</th><td>{stock.lotNumber ?? "미등록"}</td><td>{stock.onHandQty.toLocaleString("ko-KR")}</td>
           <td>{stock.reservedQty.toLocaleString("ko-KR")}</td><td>{stock.expirationDate ?? "미등록"}</td>
           <td>{{ IN_USE: "사용 중", NOT_IN_USE: "사용 중지" }[stock.usageStatus] ?? "미지정"}</td>
         </tr>)}</tbody>
@@ -55,6 +68,7 @@ function StockRows({ facility, item }) {
 }
 
 function Inventory() {
+  const [busy, setBusy] = useState(false);
   const facilities = useList("/facilities");
   const items = useList("/items");
   const [facilityId, setFacilityId] = useState("");
@@ -66,7 +80,7 @@ function Inventory() {
     <main className="inner"><h1>기관 재고 조회</h1>
       <div className="filters">
         <div><label htmlFor="facility">조회 기관</label>
-          <select id="facility" value={facilityId} onChange={e => setFacilityId(e.target.value)} disabled={!facilities.data?.length}>
+          <select id="facility" value={facilityId} onChange={e => setFacilityId(e.target.value)} disabled={busy || !facilities.data?.length}>
             <option value="">기관 선택</option>{facilities.data?.map(f => <option value={f.id} key={f.id}>{f.facilityName}</option>)}
           </select>
           {facilities.state === "error" && <Message retry={facilities.retry}>기관 목록 조회 실패</Message>}
@@ -74,7 +88,7 @@ function Inventory() {
           {facilities.data?.length === 0 && <small role="status">등록된 기관이 없습니다.</small>}
         </div>
         <div><label htmlFor="item">의약품</label>
-          <select id="item" value={itemId} onChange={e => setItemId(e.target.value)} disabled={!items.data?.length}>
+          <select id="item" value={itemId} onChange={e => setItemId(e.target.value)} disabled={busy || !items.data?.length}>
             <option value="">의약품 선택</option>{items.data?.map(i => <option value={i.id} key={i.id}>{i.name}</option>)}
           </select>
           {items.state === "error" && <Message retry={items.retry}>의약품 목록 조회 실패</Message>}
@@ -83,7 +97,7 @@ function Inventory() {
         </div>
       </div>
       {facility && item
-        ? <StockRows facility={facility} item={item} />
+        ? <StockRows key={facility.id + "/" + item.id} facility={facility} item={item} setBusy={setBusy} />
         : <section className="ledger"><h2>재고 내역</h2><Message>기관과 의약품을 선택하면 재고 내역이 표시됩니다.</Message></section>}
     </main>
   </>;

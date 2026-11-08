@@ -16,7 +16,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamicUpdate
-@Table(name="stock")
+@Table(name="stock", uniqueConstraints = @UniqueConstraint(columnNames = {"facility_id", "item_id", "lot_number"}))
 public class Stock {
 
     @Id @GeneratedValue
@@ -31,7 +31,20 @@ public class Stock {
     @JoinColumn(name="facility_id", nullable = false)
     private Facility facility;
 
+    @Column(name = "lot_number", length = 64)
+    private String lotNumber;
+
     private int onHandQty;
+
+    public void receive(int quantity, LocalDate expiration) {
+        if (usageStatus != StockStatus.IN_USE || !expiration.equals(expirationDate)) {
+            throw new CustomException(ErrorCode.LOT_CONFLICT);
+        }
+        if (quantity > Integer.MAX_VALUE - onHandQty) {
+            throw new CustomException(ErrorCode.STOCK_QUANTITY_LIMIT);
+        }
+        onHandQty += quantity;
+    }
 
     //예약됐지만 아직 출고되지 않은 수량 (B-0)
     @Column(nullable = false)

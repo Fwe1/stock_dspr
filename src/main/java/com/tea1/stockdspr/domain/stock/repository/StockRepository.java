@@ -1,12 +1,15 @@
 package com.tea1.stockdspr.domain.stock.repository;
 
 import com.tea1.stockdspr.domain.stock.entity.Stock;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface StockRepository extends JpaRepository<Stock, Long> {
@@ -16,6 +19,9 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     List<Stock> findByItemId(@Param("ItemId") Long id);
 
     List<Stock> findByFacility_IdAndItem_IdOrderById(Long facilityId, Long itemId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Stock> findByFacility_IdAndItem_IdAndLotNumber(Long facilityId, Long itemId, String lotNumber);
 
     //삭제 시 조건에 필요
     boolean existsByItem_Id(Long itemId);

@@ -1,6 +1,6 @@
 package com.tea1.stockdspr.domain.stock.controller;
 
-import com.tea1.stockdspr.domain.item.service.ItemService;
+import com.tea1.stockdspr.domain.stock.dto.LotReceiptRequest;
 import com.tea1.stockdspr.domain.stock.dto.StockRequestDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockResponseDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockUpdateDTO;
@@ -20,6 +20,13 @@ import java.util.Map;
 public class StockController {
 
     private final StockService stockService;
+
+    @PostMapping("/facilities/{facilityId}/items/{itemId}/receipts")
+    public ApiResponse<Map<String, Long>> receiveLot(@PathVariable Long facilityId, @PathVariable Long itemId,
+                                                     @Valid @RequestBody LotReceiptRequest request) {
+        Long id = stockService.receiveLot(facilityId, itemId, request);
+        return ApiResponse.response(Map.of("stockId", id));
+    }
 
     //stock등록
     @PostMapping("/items/{itemId}/stocks")

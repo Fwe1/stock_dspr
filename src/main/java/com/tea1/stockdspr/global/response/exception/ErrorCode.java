@@ -12,6 +12,11 @@ public enum ErrorCode {
     //400
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "잘못된 입력입니다"),
 
+    LOT_EXPIRED(HttpStatus.BAD_REQUEST, "유효기간이 지난 로트는 입고할 수 없습니다."),
+    STOCK_QUANTITY_LIMIT(HttpStatus.BAD_REQUEST, "입고 후 실재고가 허용 범위를 초과합니다."),
+    LOT_CONFLICT(HttpStatus.CONFLICT, "같은 로트의 유효기간 또는 사용 상태가 일치하지 않습니다."),
+    RECEIPT_CONFLICT(HttpStatus.CONFLICT, "같은 입고 요청 번호로 다른 내용이 등록되어 있습니다."),
+
     //404
     ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 아이템입니다."),
     FACILITY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 지점입니다."),

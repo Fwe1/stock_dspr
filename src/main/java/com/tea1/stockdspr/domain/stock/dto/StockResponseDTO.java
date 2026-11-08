@@ -11,6 +11,8 @@ public class StockResponseDTO {
 
     private Long id;
 
+    private String lotNumber;
+
     private Integer onHandQty;
 
     private Integer reservedQty;
