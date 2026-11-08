@@ -1,7 +1,10 @@
+import {Field,MovementTable} from "./PageParts";
+import {useDirectory} from "./DirectoryContext";
 import React, { useState } from "react";
-import { adjustmentNames, balance, items, reserved, sites } from "./model";
+import { adjustmentNames, balance, reserved, effectiveFloor } from "./model";
 
 function ScopePicker({ org, item, page }) {
+  const {sites,items}=useDirectory();
   function select(site, medicine) {
     location.hash = [site, page, medicine].join("/");
   }
@@ -15,21 +18,23 @@ function ScopePicker({ org, item, page }) {
   </div>;
 }
 
-function ChangeForm({ draft, save, close }) {
+export function ChangeForm({ draft, save, close }) {
   const [kind, setKind] = useState(draft.kind);
   const [qty, setQty] = useState(String(draft.expected));
   const [reason, setReason] = useState("");
+  const [inherit,setInherit]=useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const absolute = kind === "count" || kind === "floor";
   const after = absolute ? Number(qty) : draft.expected - Number(qty);
   async function submit(event) {
     event.preventDefault();
+    const fields=new FormData(event.currentTarget);
     if (saving) return;
     setSaving(true);
     setError("");
     try {
-      await save({ ...draft, kind, value: Number(qty), reason });
+      await save({ ...draft, kind, value: inherit?draft.common:Number(qty), reason, inherit, effectiveAt: fields.get("at")?+new Date(fields.get("at")):undefined, approver:fields.get("approver")?.trim() });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -42,18 +47,20 @@ function ChangeForm({ draft, save, close }) {
       {kind !== "floor" && <label>조정 유형<select value={kind} onChange={e => {
         setKind(e.target.value); setQty(e.target.value === "count" ? String(draft.expected) : ""); setError("");
       }}><option value="count">실사 조정</option><option value="use" disabled={draft.damaged}>사용</option><option value="discard">폐기</option></select></label>}
+      {kind==="floor"&&<><label>적용 방식<select value={inherit?"inherit":"override"} onChange={e=>setInherit(e.target.value==="inherit")}><option value="override">기관 예외값</option><option value="inherit">기본 비축량 상속</option></select></label><Field name="at" label="적용 시작 시각 (비우면 즉시)" type="datetime-local"/><Field name="approver" label="승인자" value="운영관리자" required/></>}
       <label>{kind === "floor" ? "새 최소 비축량" : absolute ? "실사 후 실재고" : "차감 수량"}
-        <input type="number" required step="1" min={absolute ? 0 : 1} max="2147483647" value={qty} onChange={e => setQty(e.target.value)}/>
+        <input type="number" required step="1" min={absolute ? 0 : 1} max="2147483647" disabled={inherit} value={inherit?draft.common:qty} onChange={e => setQty(e.target.value)}/>
       </label>
       <label className="wide">변경 사유<textarea required maxLength={300} value={reason} onChange={e => setReason(e.target.value)}/></label>
     </fieldset>
-    <p>{kind === "floor" ? "최소 비축량" : "로트 실재고"} {draft.expected}개 → {qty === "" ? "—" : after + "개"}</p>
+    <p>{kind === "floor" ? "최소 비축량" : "로트 실재고"} {draft.expected}개 → {inherit?"기본값 "+draft.common+"개":qty === "" ? "—" : after + "개"}</p>
     {error && <p role="alert" className="form-error">{error}</p>}
     <div className="actions"><button disabled={saving} className="primary">변경 저장</button><button type="button" onClick={close} disabled={saving}>닫기</button></div>
   </form>;
 }
 
 export function AdminInventory({ db, org, item, page, write }) {
+  const {sites,items}=useDirectory();
   const floorPage = page === "floor";
   const summary = balance(db, org, item);
   const lots = db.lots.filter(l => l.site === org && l.item === item);
@@ -69,7 +76,7 @@ export function AdminInventory({ db, org, item, page, write }) {
     <ScopePicker {...{ org, item, page }}/>
     <section className="ledger">
       <div className="ledger-heading"><h2>{items[item]}</h2>
-        {floorPage && !draft && <button className="primary" onClick={() => edit({ kind: "floor", expected: summary.floor })}>비축량 변경</button>}
+        {floorPage && !draft && <button className="primary" onClick={() => edit({ kind: "floor", expected: summary.floor, common:effectiveFloor(db,"*",item) })}>비축량 변경</button>}
       </div>
       <dl className="stock-totals"><div><dt>최소 비축량</dt><dd>{summary.floor}개</dd></div><div><dt>전배 가능 수량</dt><dd>{summary.available}개</dd></div></dl>
       {!floorPage && <div className="scroll"><table><thead><tr>{["로트 번호","유효기간","사용 상태","실재고","예약 수량","조정"].map(k => <th key={k}>{k}</th>)}</tr></thead>
@@ -79,16 +86,17 @@ export function AdminInventory({ db, org, item, page, write }) {
           <td><button disabled={!!draft} onClick={() => edit({ kind:"count", code:l.code, expiry:l.expiry, damaged:!!l.damaged, expected:l.qty })}>조정</button></td>
         </tr>)}</tbody></table>{lots.length === 0 && <p className="notice">조정할 로트가 없습니다.</p>}</div>}
       {draft && <ChangeForm draft={draft} save={save} close={() => setDraft(null)}/>}
-      {saved && <p className="confirmation" role="status">{adjustmentNames[saved.kind]}을 기록했습니다. {saved.before}개 → {saved.after}개</p>}
+      {saved && <p className="confirmation" role="status">{saved.effectiveAt>Date.now()?"적용을 예약했습니다. "+new Date(saved.effectiveAt).toLocaleString("ko-KR"):adjustmentNames[saved.kind]+"을 기록했습니다."} {saved.before}개 → {saved.after}개</p>}
       <div className="admin-links"><a href={`#${org}/stock/${item}`}>기관 재고 보기</a><a href={`#${org}/audit/${item}`}>이 품목의 변경 이력</a></div>
     </section>
   </>;
 }
 
 export function AdminHistory({ db, org, item }) {
+  const {sites,items}=useDirectory();
   const [site, setSite] = useState(item == null ? "" : org);
   const [medicine, setMedicine] = useState(item ?? "");
-  const entries = (db.adminHistory ?? []).filter(e => (!site || e.site === site) && (medicine === "" || e.item === Number(medicine)));
+  const entries = (db.adminHistory ?? []).filter(e => e.actor==="운영관리자" && (!site || e.site === site) && (medicine === "" || e.item === Number(medicine)));
   return <>
     <div className="admin-scope">
       <label>이력 기관<select value={site} onChange={e => setSite(e.target.value)}><option value="">전체 기관</option>
@@ -103,6 +111,6 @@ export function AdminHistory({ db, org, item }) {
             <td>{sites[e.site].name}<small>{items[e.item]}</small></td><td>{adjustmentNames[e.kind]}{e.code && <small>{e.code} · {e.expiry}{e.damaged && " · 사용 불가"}</small>}</td>
             <td>{e.before}개 → {e.after}개</td><td>{e.beforeAvailable}개 → {e.afterAvailable}개</td><td>{e.reason}</td></tr>)}</tbody>
         </table></div>}
-    </section>
+    </section><section className="ledger"><details><summary>재고 이동 이력</summary><MovementTable entries={(db.movements??[]).filter(m=>(!site||m.site===site)&&(medicine===""||m.item===Number(medicine)))}/></details></section>
   </>;
 }

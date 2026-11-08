@@ -41,6 +41,24 @@
 .demo footer a,.demo-entry {color:#174599;font-size:14px;}
 .demo footer a {float:right;}
 .demo-entry {align-self:center;margin-left:auto;}
+.demo-controls a { color:white; font-size:14px; text-underline-offset:4px; white-space:nowrap; }
+.screen-index { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(20px,3vw,50px); }
+.screen-index section {border-top:2px solid #224b8d;padding-top:14px;min-width:0;}
+.screen-index ul {list-style:none;margin:10px 0;padding:0;}
+.screen-index a {display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #d4dfe8;color:#173957;text-decoration:none;padding:9px 5px;}
+.screen-index a:hover,.screen-index a:focus-visible {background:#edf4fb;color:#143e88;}
+.screen-index a span {color:#637e95;}
+.page-tabs {display:flex;gap:20px;flex-wrap:wrap;border-bottom:1px solid #c7d4df;margin:0 0 22px;}
+.page-tabs a {color:#526980;text-decoration:none;padding:6px 0 9px;border-bottom:2px solid transparent;}
+.page-tabs a[aria-current] {color:#153e89;border-color:#19499d;font-weight:bold;}
+.screen-note {color:#526980;font-size:14px;margin:10px 0 20px;}
+.metric-strip {display:flex;align-items:stretch;flex-wrap:wrap;gap:16px 45px;border-block:1px solid #bfcfdd;padding:16px 6px;margin:16px 0 24px;}
+.metric-strip dt {font-size:14px;color:#526980;}
+.metric-strip dd {margin:4px 0 0;font-size:22px;font-weight:700;color:#184386;font-variant-numeric:tabular-nums;}
+.demo .report-table {margin:12px 0 16px;}
+.demo .scroll,.demo select {max-width:100%;}
+.demo-subhead input {display:block;font:inherit;font-weight:400;border:1px solid #aabccc;border-radius:3px;padding:8px 12px;}
+@media(max-width:700px){.screen-index{grid-template-columns:1fr;gap:24px;}.demo-controls{flex-wrap:wrap;}.demo-controls a{font-size:13px;}.page-tabs{gap:5px 14px;}.demo-subhead label{max-width:100%;}}
 .admin-scope { display:flex; flex-wrap:wrap; gap:12px 24px; padding:16px 20px; background:#edf4f8; }
 .admin-scope label { flex:1 1 200px; max-width:360px; margin:0; }
 .admin-scope select { display:block; margin-top:4px; font-weight:400; }

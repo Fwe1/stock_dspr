@@ -171,5 +171,6 @@ function Inventory() {
   </>;
 }
 
-const demo = new URLSearchParams(location.search).has("demo");
+const query = new URLSearchParams(location.search);
+const demo = location.protocol === "file:" || query.has("demo");
 createRoot(document.getElementById("root")).render(demo ? <Demo/> : <Inventory/>);
