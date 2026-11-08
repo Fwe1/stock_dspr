@@ -38,3 +38,10 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// Include a prebuilt React screen in the Spring application when available.
+tasks.named('processResources') {
+    from('frontend/dist') {
+        into 'static/inventory'
+    }
+}

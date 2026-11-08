@@ -92,6 +92,25 @@ class StockRepositoryTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    void scopedQueryIncludesOnlyTheSelectedFacilityAndItem() {
+        Facility first = facilityRepository.save(facility("한빛"));
+        Facility second = facilityRepository.save(facility("새봄"));
+        Item item = itemRepository.save(Item.builder().name("품목 A").build());
+        Item another = itemRepository.save(Item.builder().name("품목 B").build());
+        Stock included = stockRepository.save(stock(item, first, 12, null));
+        stockRepository.save(stock(item, second, 50, null));
+        stockRepository.save(stock(another, first, 7, null));
+        em.flush();
+        em.clear();
+
+        assertThat(stockRepository.findByFacility_IdAndItem_IdOrderById(first.getId(), item.getId()))
+                .extracting(Stock::getId)
+                .containsExactly(included.getId());
+        assertThat(stockRepository.findByFacility_IdAndItem_IdOrderById(second.getId(), another.getId()))
+                .isEmpty();
+    }
+
     private Facility facility(String name) {
         return Facility.builder().facilityName(name).build();
     }

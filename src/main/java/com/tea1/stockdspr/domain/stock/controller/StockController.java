@@ -51,6 +51,12 @@ public class StockController {
     }
 
 
+    @GetMapping("/facilities/{facilityId}/items/{itemId}/stocks")
+    public ApiResponse<List<StockResponseDTO>> getFacilityItemStocks(@PathVariable Long facilityId,
+                                                                     @PathVariable Long itemId) {
+        return ApiResponse.response(stockService.findByFacilityAndItem(facilityId, itemId));
+    }
+
     //stock 수정
     @PatchMapping("/stocks/{stockId}")
     public ResponseEntity<ApiResponse<Void>> updateStock(@PathVariable Long stockId, @RequestBody @Valid StockUpdateDTO stockUpdateDTO) {

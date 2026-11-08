@@ -74,6 +74,19 @@ public class StockService {
                 .toList();
     }
 
+    public List<StockResponseDTO> findByFacilityAndItem(Long facilityId, Long itemId) {
+        if (!facilityRepository.existsById(facilityId)) {
+            throw new CustomException(ErrorCode.FACILITY_NOT_FOUND);
+        }
+        if (!itemRepository.existsById(itemId)) {
+            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+        }
+        return stockRepository.findByFacility_IdAndItem_IdOrderById(facilityId, itemId)
+                .stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
     //조립 용도
     private StockResponseDTO toResponseDTO(Stock stock) {
         return StockResponseDTO.builder()
