@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import LotReceiptForm from "./LotReceiptForm.jsx";
 import TransferForm, { transferStorageKey } from "./TransferForm.jsx";
 import { readPending } from "./pendingRequest";
+import Demo from "./demo/Demo";
 import "./style.css";
 
 function isOverview(data) {
@@ -143,6 +144,7 @@ function Inventory() {
     <main className="inner"><nav className="section-nav" aria-label="기관 업무">
       <button aria-current={!sent ? "page" : undefined} disabled={busy} onClick={() => { setSent(false); setConfirmation(""); }}>기관 재고</button>
       <button aria-current={sent ? "page" : undefined} disabled={busy} onClick={() => setSent(true)}>보낸 요청</button>
+      <a className="demo-entry" href="?demo=1#H/sent">가상 기관 업무 시연</a>
     </nav><h1>{sent ? "보낸 전배 요청" : "기관 재고 조회"}</h1>
       <div className="filters">
         <div><label htmlFor="facility">조회 기관</label>
@@ -169,4 +171,5 @@ function Inventory() {
   </>;
 }
 
-createRoot(document.getElementById("root")).render(<Inventory />);
+const demo = new URLSearchParams(location.search).has("demo");
+createRoot(document.getElementById("root")).render(demo ? <Demo/> : <Inventory/>);

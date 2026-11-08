@@ -1,12 +1,14 @@
 # 기관 재고 화면
 
-Java 21로 Spring 서버를 실행한 뒤 Node.js 22.12 이상에서 프론트엔드를 실행한다.
+Node.js 22.12 이상에서 프론트엔드를 실행한다.
 
 ```sh
 cd frontend
 npm ci
 npm run dev
 ```
+
+브라우저 단독 시연은 `http://localhost:5173/inventory/?demo=1#H/sent`에서 연다. 가상 기관을 바꾸며 요청·예약·출고·수령을 처리할 수 있다. 시연 기록은 같은 브라우저에 저장된다. 실제 API를 사용하려면 Java 21에서 Spring 서버도 실행한다.
 
 개발 화면은 `http://localhost:5173/inventory/`에서 열린다. Vite는 기관·품목·재고 조회를 기본값 `http://localhost:8080`으로 전달한다. 백엔드 포트가 다르면 `STOCK_API_ORIGIN`을 설정한다.
 
