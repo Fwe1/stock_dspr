@@ -1,6 +1,8 @@
 package com.tea1.stockdspr.domain.stock.repository;
 
 import com.tea1.stockdspr.domain.facility.entity.Facility;
+import com.tea1.stockdspr.domain.facility.entity.FacilityInventory;
+import com.tea1.stockdspr.domain.stock.service.StockService;
 import com.tea1.stockdspr.domain.facility.repository.FacilityRepository;
 import com.tea1.stockdspr.domain.item.entity.Item;
 import com.tea1.stockdspr.domain.item.repository.ItemRepository;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.context.annotation.Import;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,11 +24,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest
+@Import(StockService.class)
 class StockRepositoryTest {
 
     @Autowired StockRepository stockRepository;
     @Autowired ItemRepository itemRepository;
     @Autowired FacilityRepository facilityRepository;
+    @Autowired StockService stockService;
     @PersistenceContext EntityManager em;
 
     @Test
@@ -113,6 +118,29 @@ class StockRepositoryTest {
 
     private Facility facility(String name) {
         return Facility.builder().facilityName(name).build();
+    }
+
+    @Test
+    void overviewAppliesOneFacilityItemFloorToEligibleUnreservedLots() {
+        var facility = facilityRepository.save(facility("한빛"));
+        var other = facilityRepository.save(facility("새봄"));
+        var item = itemRepository.save(Item.builder().name("품목 A").build());
+        var today = LocalDate.now();
+        em.persist(new FacilityInventory(item, facility, 10));
+        var first = stock(item, facility, 30, today);
+        first.reserve(5);
+        stockRepository.save(first);
+        stockRepository.save(stock(item, facility, 20, null));
+        stockRepository.save(stock(item, facility, 80, today.minusDays(1)));
+        var discarded = stock(item, facility, 60, today.plusDays(1));
+        discarded.discardStock();
+        stockRepository.save(discarded);
+        stockRepository.save(stock(item, other, 8, today));
+        var result = stockService.overview(facility.getId(), item.getId());
+        assertThat(result.safetyStockQty()).isEqualTo(10);
+        assertThat(result.availableQty()).isEqualTo(35);
+        assertThat(result.lots()).hasSize(4);
+        assertThat(stockService.overview(other.getId(), item.getId()).availableQty()).isEqualTo(8);
     }
 
     private Stock stock(Item item, Facility facility, int quantity, LocalDate expirationDate) {

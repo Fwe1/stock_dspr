@@ -5,26 +5,48 @@ import TransferForm, { transferStorageKey } from "./TransferForm.jsx";
 import { readPending } from "./pendingRequest";
 import "./style.css";
 
-async function fetchList(path, signal) {
+function isOverview(data) {
+  return Array.isArray(data?.lots) && Number.isSafeInteger(data.availableQty) && Number.isInteger(data.safetyStockQty);
+}
+
+async function fetchData(path, signal, validate) {
   const response = await fetch(path, { signal, headers: { Accept: "application/json" } });
   if (!response.ok) throw new Error("조회 실패");
   const payload = await response.json();
-  if (!payload.success || !Array.isArray(payload.data)) throw new Error("응답 형식 오류");
+  if (!payload.success || !validate(payload.data)) throw new Error("응답 형식 오류");
   return payload.data;
 }
 
-function useList(path) {
+function useData(path, validate = Array.isArray, refreshMs = 0) {
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState(null);
   useEffect(() => {
     if (!path) return;
     const controller = new AbortController();
-    fetchList(path, controller.signal).then(
-      data => { if (!controller.signal.aborted) setResult({ path, attempt, state: "ready", data }); },
-      () => { if (!controller.signal.aborted) setResult({ path, attempt, state: "error" }); }
-    );
-    return () => controller.abort();
-  }, [path, attempt]);
+    let timer;
+    let loading = false;
+    async function refresh() {
+      if (loading || controller.signal.aborted) return;
+      clearTimeout(timer);
+      loading = true;
+      try {
+        const data = await fetchData(path, controller.signal, validate);
+        if (!controller.signal.aborted) setResult({ path, attempt, state: "ready", data });
+      } catch {
+        if (!controller.signal.aborted) setResult({ path, attempt, state: "error" });
+      } finally {
+        loading = false;
+        if (refreshMs && !controller.signal.aborted) timer = setTimeout(refresh, refreshMs);
+      }
+    }
+    refresh();
+    if (refreshMs) window.addEventListener("focus", refresh);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [path, attempt, validate, refreshMs]);
   const current = result?.path === path && result.attempt === attempt ? result : { state: "loading" };
   return { ...current, retry: () => setAttempt(previous => previous + 1) };
 }
@@ -36,8 +58,8 @@ function Message({ children, retry }) {
 }
 
 function StockRows({ facility, item, setBusy, onRequestSaved }) {
-  const path = "/facilities/" + facility.id + "/items/" + item.id + "/stocks";
-  const stocks = useList(path);
+  const path = "/facilities/" + facility.id + "/items/" + item.id + "/stock-overview";
+  const stocks = useData(path, isOverview, 5000);
   const [form, setForm] = useState(null);
   const [saved, setSaved] = useState(null);
   const suspended = facility.operationStatus === "SUSPENDED";
@@ -49,7 +71,7 @@ function StockRows({ facility, item, setBusy, onRequestSaved }) {
   }
   return <section className="ledger" aria-labelledby="stock-name">
     <div className="ledger-heading"><div><p>{facility.facilityName}</p><h2 id="stock-name">{item.name}</h2></div>
-      <div className="actions">{stocks.state === "ready" && <span>재고 기록 {stocks.data.length}건</span>}
+      <div className="actions">{stocks.state === "ready" && <span>재고 기록 {stocks.data.lots.length}건</span>}
         {!form && <><button onClick={() => { setSaved(null); setForm("receipt"); }}>로트 입고 등록</button>
           <button className="primary" disabled={suspended && !retryTransfer} onClick={() => { setSaved(null); setForm("transfer"); }}>전배 요청</button></>}
       </div>
@@ -61,11 +83,15 @@ function StockRows({ facility, item, setBusy, onRequestSaved }) {
     {saved && <p role="status" className="confirmation">{saved.lotNumber} · {saved.quantity.toLocaleString("ko-KR")}개 입고를 기록했습니다.</p>}
     {stocks.state === "loading" && <Message>재고를 불러오는 중입니다.</Message>}
     {stocks.state === "error" && <Message retry={stocks.retry}>재고를 불러오지 못했습니다.</Message>}
-    {stocks.state === "ready" && (stocks.data.length === 0
+    {stocks.state === "ready" && <dl className="stock-totals">
+      <div><dt>최소 비축량</dt><dd>{stocks.data.safetyStockQty.toLocaleString("ko-KR")}개</dd></div>
+      <div><dt>전배 가능 수량</dt><dd>{stocks.data.availableQty.toLocaleString("ko-KR")}개</dd></div>
+    </dl>}
+    {stocks.state === "ready" && (stocks.data.lots.length === 0
       ? <Message>이 기관에 등록된 해당 의약품 재고가 없습니다.</Message>
       : <div className="scroll"><table aria-label={facility.facilityName + " " + item.name + " 재고"}>
         <thead><tr>{["재고 ID", "로트 번호", "실재고", "예약 수량", "유효기간", "사용 상태"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
-        <tbody>{stocks.data.map(stock => <tr key={stock.id} className={saved?.stockId === stock.id ? "received" : undefined}>
+        <tbody>{stocks.data.lots.map(stock => <tr key={stock.id} className={saved?.stockId === stock.id ? "received" : undefined}>
           <th scope="row">{stock.id}</th><td>{stock.lotNumber ?? "미등록"}</td><td>{stock.onHandQty.toLocaleString("ko-KR")}</td>
           <td>{stock.reservedQty.toLocaleString("ko-KR")}</td><td>{stock.expirationDate ?? "미등록"}{stock.expired && <strong className="expiry-note">기한 경과</strong>}</td>
           <td>{{ IN_USE: "사용 중", NOT_IN_USE: "사용 중지" }[stock.usageStatus] ?? "미지정"}</td>
@@ -75,7 +101,7 @@ function StockRows({ facility, item, setBusy, onRequestSaved }) {
 }
 
 function SentRequests({ facility, confirmation }) {
-  const requests = useList("/facilities/" + facility.id + "/transfer-requests");
+  const requests = useData("/facilities/" + facility.id + "/transfer-requests");
   return <section className="ledger"><h2>{facility.facilityName} · 보낸 요청</h2>
     {confirmation && <p className="confirmation" role="status">{confirmation} 요청을 등록했습니다.</p>}
     {requests.state === "loading" && <Message>보낸 요청을 불러오는 중입니다.</Message>}
@@ -97,8 +123,8 @@ function SentRequests({ facility, confirmation }) {
 
 function Inventory() {
   const [busy, setBusy] = useState(false);
-  const facilities = useList("/facilities");
-  const items = useList("/items");
+  const facilities = useData("/facilities");
+  const items = useData("/items");
   const [facilityId, setFacilityId] = useState(() => new URLSearchParams(location.search).get("facility") || "");
   const [itemId, setItemId] = useState(() => new URLSearchParams(location.search).get("item") || "");
   const [sent, setSent] = useState(() => new URLSearchParams(location.search).get("view") === "sent");

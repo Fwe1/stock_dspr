@@ -27,6 +27,10 @@ thead { background: #f2f6f9; font-size: 14px; }
 .primary { color: white; background: #19499d; border-color: #19499d; font-weight: 600; }
 button:disabled { opacity: .6; cursor: not-allowed; }
 .expiry-note { margin-left: 6px; font-size: 13px; color: #8b3d28; }
+.stock-totals, .stock-totals div { display: flex; align-items: baseline; flex-wrap: wrap; }
+.stock-totals { gap: 8px 32px; margin: 16px 0; }
+.stock-totals dt { color: #50657c; font-size: 14px; }
+.stock-totals dd { margin-left: 8px; color: #174599; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .receipt { background: #edf4f8; padding: 18px 24px; margin: 18px 0; }
 .receipt h3 { margin: 0; font-size: 18px; }
 .receipt-context { margin: 2px 0 14px; font-size: 14px; color: #50657c; }

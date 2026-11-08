@@ -20,6 +20,12 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 
     List<Stock> findByFacility_IdAndItem_IdOrderById(Long facilityId, Long itemId);
 
+    @Query("select coalesce(sum(s.onHandQty - s.reservedQty), 0) from Stock s " +
+            "where s.facility.id = :facilityId and s.item.id = :itemId and s.usageStatus = IN_USE " +
+            "and (s.expirationDate is null or s.expirationDate >= :today)")
+    long eligibleBalance(@Param("facilityId") Long facilityId, @Param("itemId") Long itemId,
+                         @Param("today") java.time.LocalDate today);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Stock s where s.id = :id")
     Optional<Stock> lockById(@Param("id") Long id);

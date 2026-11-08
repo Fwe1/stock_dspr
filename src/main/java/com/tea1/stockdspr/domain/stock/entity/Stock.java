@@ -66,7 +66,7 @@ public class Stock {
         this.usageStatus = StockStatus.NOT_IN_USE;
     }
 
-    //가용 수량 = 실재고 - 예약 수량 (B-0, 최소 비축량은 아직 없음)
+    //개별 로트의 미예약 수량. 비축량은 기관·품목 합계에서 차감한다.
     public int getAvailableQty() {
         return onHandQty - reservedQty;
     }

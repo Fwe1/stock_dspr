@@ -17,6 +17,14 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
     @Query("select f from Facility f where f.id = :id")
     Optional<Facility> lockById(@Param("id") Long id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Facility f where f.id = (select s.facility.id from Stock s where s.id = :stockId)")
+    Optional<Facility> lockForStock(@Param("stockId") Long stockId);
+
+    @Query("select coalesce(max(i.safetyStockQty), 0) from FacilityInventory i " +
+            "where i.facility.id = :facilityId and i.item.id = :itemId")
+    int safetyStockQty(@Param("facilityId") Long facilityId, @Param("itemId") Long itemId);
+
     @Query("SELECT f FROM Facility f WHERE f.facilityName = :facilityName")
     Optional<Facility> findByName(@Param("facilityName") String name);
 

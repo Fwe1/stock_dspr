@@ -3,6 +3,7 @@ package com.tea1.stockdspr.domain.stock.controller;
 import com.tea1.stockdspr.domain.stock.dto.LotReceiptRequest;
 import com.tea1.stockdspr.domain.stock.dto.StockRequestDTO;
 import com.tea1.stockdspr.domain.stock.dto.StockResponseDTO;
+import com.tea1.stockdspr.domain.stock.dto.StockOverview;
 import com.tea1.stockdspr.domain.stock.dto.StockUpdateDTO;
 import com.tea1.stockdspr.domain.stock.service.StockService;
 import com.tea1.stockdspr.global.response.ApiResponse;
@@ -64,7 +65,11 @@ public class StockController {
         return ApiResponse.response(stockService.findByFacilityAndItem(facilityId, itemId));
     }
 
-    //stock 수정
+    @GetMapping("/facilities/{facilityId}/items/{itemId}/stock-overview")
+    public ApiResponse<StockOverview> getOverview(@PathVariable Long facilityId, @PathVariable Long itemId) {
+        return ApiResponse.response(stockService.overview(facilityId, itemId));
+    }
+
     @PatchMapping("/stocks/{stockId}")
     public ResponseEntity<ApiResponse<Void>> updateStock(@PathVariable Long stockId, @RequestBody @Valid StockUpdateDTO stockUpdateDTO) {
 

@@ -9,6 +9,8 @@ import com.tea1.stockdspr.domain.reservation.repository.ReservationRepository;
 import com.tea1.stockdspr.domain.stock.entity.Stock;
 import com.tea1.stockdspr.domain.stock.entity.StockStatus;
 import com.tea1.stockdspr.domain.stock.repository.StockRepository;
+import com.tea1.stockdspr.domain.stock.service.StockService;
+import com.tea1.stockdspr.domain.facility.repository.FacilityRepository;
 import com.tea1.stockdspr.global.response.exception.CustomException;
 import com.tea1.stockdspr.global.response.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,11 +31,13 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final StockRepository stockRepository;
+    private final StockService stockService;
+    private final FacilityRepository facilities;
 
     //재고(로트)에 임시 예약(HELD)을 만든다 (C-3)
-    //동시성 제어 없음: 읽고 검사한 뒤 수량을 바꾸는 방식이라 동시 요청이면 초과 예약될 수 있음
     @Transactional
     public ReservationResponseDTO reserve(Long stockId, ReservationRequestDTO reservationRequestDTO) {
+        var facility = stockService.lockFacilityForStock(stockId);
 
         //같은 idempotencyKey로 다시 보내면 처음 만든 예약을 그대로 반환
         String idempotencyKey = reservationRequestDTO.getIdempotencyKey();
@@ -47,6 +51,12 @@ public class ReservationService {
         Stock stock = stockRepository.findById(stockId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
         checkReservable(stock);
+
+        Long itemId = stock.getItem().getId();
+        int safety = facilities.safetyStockQty(facility.getId(), itemId);
+        if (stockService.availableQty(facility, itemId, safety) < reservationRequestDTO.getQuantity()) {
+            throw new CustomException(ErrorCode.NOT_ENOUGH_STOCK);
+        }
 
         //가용 수량이 부족하면 NOT_ENOUGH_STOCK, UPDATE 한 문장으로 함
         int updated = stockRepository.increaseReservedQty(stockId, reservationRequestDTO.getQuantity());

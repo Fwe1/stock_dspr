@@ -1,6 +1,8 @@
 package com.tea1.stockdspr.domain.stock.service;
 
 import com.tea1.stockdspr.domain.facility.entity.Facility;
+import com.tea1.stockdspr.domain.facility.entity.FacilityStatus;
+import com.tea1.stockdspr.domain.stock.dto.StockOverview;
 import com.tea1.stockdspr.domain.facility.repository.FacilityRepository;
 import com.tea1.stockdspr.domain.stock.dto.LotReceiptRequest;
 import com.tea1.stockdspr.domain.stock.entity.LotReceipt;
@@ -18,6 +20,7 @@ import com.tea1.stockdspr.global.response.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import java.util.List;
 import java.time.LocalDate;
 
@@ -112,7 +115,24 @@ public class StockService {
                 .toList();
     }
 
-    //조립 용도
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public StockOverview overview(Long facilityId, Long itemId) {
+        Facility facility = facilityRepository.findById(facilityId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FACILITY_NOT_FOUND));
+        if (!itemRepository.existsById(itemId)) throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+        int safety = facilityRepository.safetyStockQty(facilityId, itemId);
+        long available = availableQty(facility, itemId, safety);
+        var lots = stockRepository.findByFacility_IdAndItem_IdOrderById(facilityId, itemId)
+                .stream().map(this::toResponseDTO).toList();
+        return new StockOverview(safety, available, lots);
+    }
+
+    public long availableQty(Facility facility, Long itemId, int safetyStockQty) {
+        if (facility.getOperationStatus() != FacilityStatus.ACTIVE) return 0;
+        long unreserved = stockRepository.eligibleBalance(facility.getId(), itemId, LocalDate.now());
+        return Math.max(0L, unreserved - safetyStockQty);
+    }
+
     private StockResponseDTO toResponseDTO(Stock stock) {
         return StockResponseDTO.builder()
                 .id(stock.getId())
@@ -129,7 +149,7 @@ public class StockService {
 
     @Transactional
     public void updateStock(Long stockId, StockUpdateDTO dto) {
-
+        lockFacilityForStock(stockId);
         Stock s = stockRepository.lockById(stockId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
@@ -145,6 +165,7 @@ public class StockService {
 
     @Transactional
     public void deleteStock(Long stockId) {
+        lockFacilityForStock(stockId);
         Stock s = stockRepository.lockById(stockId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
@@ -161,9 +182,15 @@ public class StockService {
 
     @Transactional
     public void discardStock(Long stockId) {
+        lockFacilityForStock(stockId);
         Stock s = stockRepository.findById(stockId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
 
         s.discardStock();
+    }
+
+    public Facility lockFacilityForStock(Long stockId) {
+        return facilityRepository.lockForStock(stockId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STOCK_NOT_FOUND));
     }
 }
