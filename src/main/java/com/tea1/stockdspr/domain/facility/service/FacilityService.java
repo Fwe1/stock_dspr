@@ -6,6 +6,7 @@ import com.tea1.stockdspr.domain.facility.dto.FacilityUpdateDTO;
 import com.tea1.stockdspr.domain.facility.entity.Facility;
 import com.tea1.stockdspr.domain.facility.repository.FacilityRepository;
 import com.tea1.stockdspr.domain.stock.repository.StockRepository;
+import com.tea1.stockdspr.domain.transfer.TransferRequestRepository;
 import com.tea1.stockdspr.global.response.exception.CustomException;
 import com.tea1.stockdspr.global.response.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class FacilityService {
 
     private final FacilityRepository facilityRepository;
     private final StockRepository stockRepository;
+    private final TransferRequestRepository transferRequests;
 
     //C
     @Transactional
@@ -67,6 +69,7 @@ public class FacilityService {
         Facility facility = findFacility(facilityId);
 
         //재고가 남아 있는 기관은 FK 때문에 지울 수 없음
+        if (transferRequests.existsByFacility_Id(facilityId)) throw new CustomException(ErrorCode.TRANSFER_HISTORY_EXISTS);
         if (stockRepository.existsByFacility_Id(facilityId)) {
             throw new CustomException(ErrorCode.FACILITY_HAS_STOCK);
         }

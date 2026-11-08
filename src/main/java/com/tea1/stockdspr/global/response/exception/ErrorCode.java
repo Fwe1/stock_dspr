@@ -17,6 +17,11 @@ public enum ErrorCode {
     LOT_CONFLICT(HttpStatus.CONFLICT, "같은 로트의 유효기간 또는 사용 상태가 일치하지 않습니다."),
     RECEIPT_CONFLICT(HttpStatus.CONFLICT, "같은 입고 요청 번호로 다른 내용이 등록되어 있습니다."),
 
+    TRANSFER_DEADLINE(HttpStatus.BAD_REQUEST, "필요 시각을 현재 이후로 지정해 주세요."),
+    TRANSFER_KEY_CONFLICT(HttpStatus.CONFLICT, "같은 요청 키로 다른 내용이 등록되어 있습니다."),
+    TRANSFER_FACILITY_SUSPENDED(HttpStatus.CONFLICT, "운영 중지된 기관은 전배를 요청할 수 없습니다."),
+    TRANSFER_HISTORY_EXISTS(HttpStatus.CONFLICT, "전배 요청 이력이 있어 삭제할 수 없습니다."),
+
     //404
     ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 아이템입니다."),
     FACILITY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 지점입니다."),

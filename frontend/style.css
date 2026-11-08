@@ -36,3 +36,11 @@ button:disabled { opacity: .6; cursor: wait; }
 .confirmation { border-left: 3px solid #2458ab; color: #174599; padding-left: 12px; }
 .received { background: #edf4fb; }
 @media (max-width: 600px) { .receipt-fields { grid-template-columns: 1fr; } .ledger-heading { flex-wrap: wrap; } }
+.section-nav { display: flex; gap: 24px; border-bottom: 1px solid #cad7e1; }
+.section-nav button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 12px 0 9px; }
+.section-nav [aria-current] { border-bottom-color: #19499d; font-weight: bold; }
+.receipt select { margin-top: 4px; font-weight: 400; }
+summary { cursor: pointer; color: #174599; }
+details dl { margin: 8px 0; min-width: 140px; max-width: 260px; white-space: normal; overflow-wrap: anywhere; }
+details dt { font-size: 13px; color: #50657c; }
+details dd { margin: 0 0 6px; }

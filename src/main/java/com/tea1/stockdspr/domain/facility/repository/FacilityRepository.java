@@ -15,7 +15,7 @@ public interface FacilityRepository extends JpaRepository<Facility, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Facility f where f.id = :id")
-    Optional<Facility> lockForReceipt(@Param("id") Long id);
+    Optional<Facility> lockById(@Param("id") Long id);
 
     @Query("SELECT f FROM Facility f WHERE f.facilityName = :facilityName")
     Optional<Facility> findByName(@Param("facilityName") String name);

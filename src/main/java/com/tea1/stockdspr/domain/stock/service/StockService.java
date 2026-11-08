@@ -36,7 +36,7 @@ public class StockService {
     @Transactional
     public Long receiveLot(Long facilityId, Long itemId, LotReceiptRequest request) {
         // Serialize the first receipt too, when there is no lot row to lock yet.
-        Facility facility = facilityRepository.lockForReceipt(facilityId)
+        Facility facility = facilityRepository.lockById(facilityId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FACILITY_NOT_FOUND));
         var prior = receiptRepository.findByFacilityIdAndRequestId(facilityId, request.requestId());
         if (prior.isPresent()) {

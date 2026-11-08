@@ -5,6 +5,7 @@ import com.tea1.stockdspr.domain.item.dto.ItemResponseDTO;
 import com.tea1.stockdspr.domain.item.entity.Item;
 import com.tea1.stockdspr.domain.item.repository.ItemRepository;
 import com.tea1.stockdspr.domain.stock.repository.StockRepository;
+import com.tea1.stockdspr.domain.transfer.TransferRequestRepository;
 import com.tea1.stockdspr.global.response.exception.CustomException;
 import com.tea1.stockdspr.global.response.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final StockRepository stockRepository;
+    private final TransferRequestRepository transferRequests;
 
     //C
     @Transactional
@@ -74,6 +76,7 @@ public class ItemService {
         itemRepository.findById(itemId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
+        if (transferRequests.existsByItem_Id(itemId)) throw new CustomException(ErrorCode.TRANSFER_HISTORY_EXISTS);
         if(!stockRepository.existsByItem_Id(itemId)) {
             itemRepository.deleteById(itemId);
         } else throw new CustomException(ErrorCode.ITEM_HAS_STOCK);
@@ -85,4 +88,3 @@ public class ItemService {
 
 
 }
-
