@@ -27,8 +27,8 @@ export function NewRequest({org,run,go}) {
     <label className="wide">요청 사유<textarea required name="reason" maxLength={500}/></label>
   </div><button className="primary">요청 등록 및 후보 조회</button></form>;
 }
-export function Stock({db,org,run,go}) {
-  const [item,setItem]=useState(0), [open,setOpen]=useState(false);
+export function Stock({db,org,run,go,initialItem=0}) {
+  const [item,setItem]=useState(initialItem), [open,setOpen]=useState(false);
   const lots=db.lots.filter(l=>l.site===org && l.item===item), total=balance(db,org,item);
   async function submit(e) {
     e.preventDefault();const f=new FormData(e.currentTarget);

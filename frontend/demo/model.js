@@ -45,7 +45,8 @@ function usable(db, site, item, date) {
 }
 export function balance(db, site, item, date = new Date().toISOString().slice(0,10)) {
   const free = usable(db, site, item, date).reduce((s,l) => s + l.qty - reserved(db,l),0);
-  return { floor: floors[site][item], available: Math.max(0, free - floors[site][item]) };
+  const floor = db.floorOverrides?.[site]?.[item] ?? floors[site][item];
+  return { floor, available: Math.max(0, free - floor) };
 }
 export function candidates(db, r) {
   const from = sites[r.from], neededDay = new Date(r.due).toISOString().slice(0,10);
@@ -137,6 +138,47 @@ export function apply(db, actor, action, id, data = {}) {
   }
   r.history.push({time:Date.now(),text});
   return r.id;
+}
+
+export const adjustmentNames = { count: "실사 조정", use: "사용", discard: "폐기", floor: "비축량 변경" };
+
+export function applyAdminChange(db, site, item, edit) {
+  ensure(Object.hasOwn(sites, site) && Number.isInteger(item) && items[item], "기관과 의약품을 확인해 주세요.");
+  const { kind, value, expected } = edit;
+  const reason = edit.reason.trim();
+  ensure(Object.hasOwn(adjustmentNames, kind) && reason.length > 0 && reason.length <= 300, "변경 유형과 사유를 확인해 주세요.");
+  ensure(Number.isSafeInteger(value) && value >= 0 && value <= 2147483647, "수량은 0 이상의 정수로 입력해 주세요.");
+  const beforeAvailable = balance(db, site, item).available;
+  let before, after;
+  if (kind === "floor") {
+    before = balance(db, site, item).floor;
+    after = value;
+    ensure(before === expected, "작성 중 비축량이 바뀌었습니다. 다시 선택해 주세요.");
+    ensure(before !== after, "변경 전과 후의 수량이 같습니다.");
+    db.floorOverrides ??= {};
+    db.floorOverrides[site] ??= {};
+    db.floorOverrides[site][item] = after;
+  } else {
+    const lot = db.lots.find(l => l.site === site && l.item === item && l.code === edit.code &&
+      l.expiry === edit.expiry && !!l.damaged === edit.damaged);
+    ensure(lot, "선택한 로트를 다시 확인해 주세요.");
+    before = lot.qty;
+    after = kind === "count" ? value : before - value;
+    const held = lot.damaged ? 0 : reserved(db, lot);
+    ensure(kind !== "use" || (!lot.damaged && lot.expiry >= new Date().toISOString().slice(0,10)), "사용 불가 또는 기한 경과 로트는 사용할 수 없습니다.");
+    ensure(after >= held, "변경 후 실재고가 예약 수량(" + held + "개)보다 적습니다.");
+    ensure(before === expected, "작성 중 실재고가 바뀌었습니다. 다시 선택해 주세요.");
+    ensure(before !== after, "변경 전과 후의 수량이 같습니다.");
+    lot.qty = after;
+  }
+  const entry = {
+    id: crypto.randomUUID(), at: Date.now(), site, item, kind, before, after, reason,
+    code: edit.code, expiry: edit.expiry, damaged: edit.damaged, actor: "운영관리자",
+    beforeAvailable, afterAvailable: balance(db, site, item).available
+  };
+  db.adminHistory ??= [];
+  db.adminHistory.unshift(entry);
+  return entry;
 }
 
 export async function changeDemo(edit) {

@@ -10,6 +10,8 @@ npm run dev
 
 브라우저 단독 시연은 `http://localhost:5173/inventory/?demo=1#H/sent`에서 연다. 가상 기관을 바꾸며 요청·예약·출고·수령을 처리할 수 있다. 시연 기록은 같은 브라우저에 저장된다. 실제 API를 사용하려면 Java 21에서 Spring 서버도 실행한다.
 
+시연 역할을 **운영관리자**로 바꾸면 로트 실사·사용·폐기 수량과 기관·의약품별 최소 비축량을 조정할 수 있다. **변경 이력**에서 변경 사유, 조정 전후 수량, 당시 전배 가능 수량을 확인한다.
+
 개발 화면은 `http://localhost:5173/inventory/`에서 열린다. Vite는 기관·품목·재고 조회를 기본값 `http://localhost:8080`으로 전달한다. 백엔드 포트가 다르면 `STOCK_API_ORIGIN`을 설정한다.
 
 Spring과 함께 제공하려면 `frontend`에서 `npm run build`를 먼저 실행한 뒤 프로젝트 루트에서 `./gradlew bootRun`을 실행한다. Windows에서는 `.\gradlew.bat bootRun`을 사용한다. 화면 주소는 `/inventory/index.html`이다.
