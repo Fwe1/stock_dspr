@@ -190,6 +190,7 @@ public class ReservationService {
                 .build();
     }
 
+
     //거절·취소·만료 시 예약 수량 반환
     private void releaseReservedQty(Reservation reservation) {
         int updated = stockRepository.decreaseReservedQty(reservation.getStock().getId(), reservation.getQuantity());
