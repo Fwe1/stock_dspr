@@ -4,6 +4,7 @@ import com.tea1.stockdspr.domain.item.dto.ItemRequestDTO;
 import com.tea1.stockdspr.domain.item.dto.ItemResponseDTO;
 import com.tea1.stockdspr.domain.item.entity.Item;
 import com.tea1.stockdspr.domain.item.repository.ItemRepository;
+import com.tea1.stockdspr.domain.stock.cache.StockCache;
 import com.tea1.stockdspr.domain.stock.repository.StockRepository;
 import com.tea1.stockdspr.global.response.exception.CustomException;
 import com.tea1.stockdspr.global.response.exception.ErrorCode;
@@ -19,6 +20,7 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final StockRepository stockRepository;
+    private final StockCache stockCache;
 
     //C
     @Transactional
@@ -76,6 +78,7 @@ public class ItemService {
 
         if(!stockRepository.existsByItem_Id(itemId)) {
             itemRepository.deleteById(itemId);
+            stockCache.evictAfterCommit(itemId);
         } else throw new CustomException(ErrorCode.ITEM_HAS_STOCK);
 
     }

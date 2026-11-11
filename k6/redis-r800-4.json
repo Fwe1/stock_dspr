@@ -1,0 +1,66 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {}
+    },
+    "metrics": {
+        "data_sent": {
+            "count": 30023,
+            "rate": 428.7828026341966
+        },
+        "dropped_iterations": {
+            "count": 24152,
+            "rate": 344.9342920168243
+        },
+        "vus": {
+            "value": 300,
+            "min": 33,
+            "max": 350
+        },
+        "vus_max": {
+            "value": 350,
+            "min": 234,
+            "max": 350
+        },
+        "http_req_duration": {
+            "avg": 0,
+            "med": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0
+        },
+        "data_received": {
+            "count": 0,
+            "rate": 0
+        },
+        "http_req_duration{phase:measure}": {
+            "avg": 0,
+            "med": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "max": 0,
+            "thresholds": {
+                "p(95)<200": false
+            }
+        },
+        "http_req_failed{phase:measure}": {
+            "passes": 0,
+            "fails": 0,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 0,
+            "value": 0
+        }
+    },
+    "setup_data": {
+        "itemId": null
+    }
+}
